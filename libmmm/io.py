@@ -28,6 +28,8 @@ class Memory(Io):
         if self.flag_w:
             flags |= mmap.PROT_WRITE
         self.mmap = mmap.mmap(self.f, size, mmap.MAP_SHARED, flags, offset=start)
+        self.bindstart = start
+        self.bindsize = size
         super(Memory, self).init()
         
     def readio(self, start, size):
@@ -45,5 +47,8 @@ class Memory(Io):
         
     def close(self):
         if self.isinited:
+            logger.debug("%s unbinding: [%d (%s), %d (%s)]", self.dev,
+                         self.bindstart, hex(self.bindstart),
+                         self.bindsize, hex(self.bindsize))
             self.mmap.close()
             os.close(self.f)
