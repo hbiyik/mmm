@@ -11,6 +11,8 @@ from libmmm.helper import logger
 class Memory(Io):
     def init(self):
         # PAGESIZE ALIGN
+        if os.path.exists("/dev/insecure_mem"):
+            self.dev = "/dev/insecure_mem"
         self.startoffset = self.start % self.pagesize
         start = int(self.start / self.pagesize) * self.pagesize
         startoffset = self.start - start
