@@ -55,7 +55,20 @@ class PVTM:
         CON6_REG = Reg32("CON6", 0x1c)
         self.block(CON6_REG)
         CON6_REG.register(0, 32, Datapoint("AVR_TRESHOLD", default=0))
+        
+        INT_EN_REG = Reg32("INT_EN", 0x70)
+        self.block(INT_EN_REG)
+        INT_EN_REG.register(0, 1, Datapoint("MIN_VALUE", default=0))
+        INT_EN_REG.register(1, 1, Datapoint("AVR_VALUE", default=0))
+        INT_EN_REG.register(2, 1, Datapoint("CAL_DONE", default=0))
+        INT_EN_REG.register(3, 29, Datapoint("reserved", default=0))
 
+        INT_EN_REG = Reg32("INT_STAT", 0x74)
+        self.block(INT_EN_REG)
+        INT_EN_REG.register(0, 1, Datapoint("MIN_VALUE", default=0))
+        INT_EN_REG.register(1, 1, Datapoint("AVR_VALUE", default=0))
+        INT_EN_REG.register(2, 1, Datapoint("CAL_DONE", default=0))
+        INT_EN_REG.register(3, 29, Datapoint("reserved", default=0))
 class GPIO:
     suffix = ""
     start = 0
