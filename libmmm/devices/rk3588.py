@@ -69,6 +69,30 @@ class PVTM:
         INT_EN_REG.register(1, 1, Datapoint("AVR_VALUE", default=0))
         INT_EN_REG.register(2, 1, Datapoint("CAL_DONE", default=0))
         INT_EN_REG.register(3, 29, Datapoint("reserved", default=0))
+
+        STATUS0_REG = Reg32("STATUS0", 0x80)
+        self.block(STATUS0_REG)
+        STATUS0_REG.register(0, 1, Datapoint("FREQ_DONE", default=0))
+        STATUS0_REG.register(1, 31, Datapoint("reserved", default=0))
+        
+        addr = 0x84
+        for reg, val in [("STATUS1", "freq_cnt"),
+                         ("STATUS2", "rnd_seed_low_bits"),
+                         ("STATUS3", "rnd_seed_hi_bits"),
+                         ("STATUS4", "min_value"),
+                         ("STATUS5", "avr_value"),
+                         ("STATUS6", "max_value")]:
+            REG = Reg32(reg, addr)
+            self.block(REG)
+            REG.register(0, 32, Datapoint(val, default=0))
+            addr += 4
+            
+        STATUS7_REG = Reg32("STATUS7", 0x9c)
+        self.block(STATUS7_REG)
+        STATUS7_REG.register(0, 16, Datapoint("CAL_CNT", default=0))
+        STATUS7_REG.register(16, 16, Datapoint("AVR_CNT", default=0))
+
+
 class GPIO:
     suffix = ""
     start = 0
@@ -156,7 +180,7 @@ class GPIO4(GPIO, Device):
 #    suffix = "PMU"
 #    start = 0xFD8C0000
 
-class PVTM_CORE_B0(PVTM, Device):
+class CORE_B0_PVTM(PVTM, Device):
     suffix = "CORE_B0"
     start = 0xFDA40000
    
