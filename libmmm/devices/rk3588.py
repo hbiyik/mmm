@@ -8,20 +8,54 @@ class PVTM:
         start = start or self.start
         super(PVTM, self).__init__(self.suffix + "_PVTM", start)
         
-        VERSION_REG = Reg32("VERSION", 0x0000)
+        VERSION_REG = Reg32("VERSION", 0x0)
         self.block(VERSION_REG)
         VERSION_REG.register(0, 16, Datapoint("reserved", default=0))
         VERSION_REG.register(16, 16, Datapoint("VERSION", default=0x203))
         
-        CON0_REG = Reg32("CON0", 0x0004)
+        CON0_REG = Reg32("CON0", 0x4)
         self.block(CON0_REG)
         CON0_REG.register(0, 1, Datapoint("START", default=0))
         CON0_REG.register(1, 1, Datapoint("OSC_EN", default=0))
         CON0_REG.register(2, 3, Datapoint("OSC_SEL", default=0))
         CON0_REG.register(5, 1, Datapoint("SEED_EN", default=0))
         CON0_REG.register(6, 10, Datapoint("reserved", default=0))
-        CON0_REG.register(16, 16, Datapoint("WRITE_ENABLE", default=0))
-            
+        for i in range(16):
+            CON0_REG.register(16 + i, 1, Datapoint("WRITE_EN_%d" % i, default=0))
+        
+        CON1_REG = Reg32("CON1", 0x8)
+        self.block(CON1_REG)
+        CON1_REG.register(0, 32, Datapoint("CAL_CNT", default=0))
+
+        CON2_REG = Reg32("CON2", 0xC)
+        self.block(CON2_REG)
+        CON2_REG.register(0, 1, Datapoint("START_AUTO", default=0))
+        CON2_REG.register(1, 1, Datapoint("OSC_EN_AUTO", default=0))
+        CON2_REG.register(2, 3, Datapoint("OSC_SEL_AUTO", default=0))
+        CON2_REG.register(5, 1, Datapoint("START_AUTO_MODE", default=0))
+        CON2_REG.register(6, 1, Datapoint("AVR_UPDATE_MODE", default=0))
+        CON2_REG.register(7, 1, Datapoint("AVR_CAL_MODE", default=0))
+        CON2_REG.register(8, 8, Datapoint("OSC_RING_AUTOSEL_EN", default=0))
+        for i in range(16):
+            CON2_REG.register(16 + i, 1, Datapoint("WRITE_EN_%d" % i, default=0))
+
+        CON3_REG = Reg32("CON3", 0x10)
+        self.block(CON3_REG)
+        CON3_REG.register(0, 32, Datapoint("CAL_CNT_AUTO", default=0))
+
+        CON4_REG = Reg32("CON4", 0x14)
+        self.block(CON4_REG)
+        CON4_REG.register(0, 16, Datapoint("CAL_PERIOD", default=0))
+        CON4_REG.register(16, 16, Datapoint("AVR_PERIOD", default=0))
+        
+        CON5_REG = Reg32("CON5", 0x18)
+        self.block(CON5_REG)
+        CON5_REG.register(0, 32, Datapoint("MIN_TRESHOLD", default=0))
+
+        CON6_REG = Reg32("CON6", 0x1c)
+        self.block(CON6_REG)
+        CON6_REG.register(0, 32, Datapoint("AVR_TRESHOLD", default=0))
+
 class GPIO:
     suffix = ""
     start = 0
