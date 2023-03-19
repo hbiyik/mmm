@@ -256,4 +256,4 @@ class Validator:
         if self.valuemap:
             return ",".join(self.valuemap)
         else:
-            return "[%d - %d]" % (self.intfrom, self.intto)
+            return "[%d~%d]" % (self.intfrom, self.intto)
