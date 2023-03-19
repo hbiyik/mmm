@@ -27,7 +27,7 @@ addfilters(arg_get)
 
 arg_set = arg_command.add_parser('set', help="set the value of register to [value] positional argument")
 addfilters(arg_set, True)
-arg_set.add_argument("value", help="value to be set", type=int)
+arg_set.add_argument("value", help="value to be set")
 
 args = parser.parse_args()
 

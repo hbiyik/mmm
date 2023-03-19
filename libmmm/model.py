@@ -104,10 +104,17 @@ class Reg32(Block):
         newval = (data32bit | (value << start)) & self.maxbits
         return struct.pack("%sI" % self.endian, newval)
     
+    def _checkvalidity(self, datapoint, value):
+        if datapoint.validity and datapoint.validity.checkvalue(value):
+            return datapoint.validity.getraw(value)
+        else:
+            return value
+    
     def write(self, name, value):
         oldval = self.readraw()
         for start, size, datapoint in self.iterdatapoints():
             if datapoint.name == name:
+                value = self._checkvalidity(datapoint, value)
                 super(Reg32, self).write(self._setbit(oldval, start, size, value))
                 return True
         
@@ -233,7 +240,7 @@ class Validator:
     
     def checkvalue(self, value):
         if self.valuemap:
-            value = str.value.upper()
+            value = str(value).upper()
             if value not in self.valuemap:
                 raise ValueError("%s value not in %s" % (value, self.help()))
         else:
@@ -242,7 +249,7 @@ class Validator:
     
     def getraw(self, value):
         if self.valuemap:
-            return self.valuemap.index(value) + self.intfrom
+            return self.valuemap.index(str(value).upper()) + self.intfrom
         else:
             return value
         
