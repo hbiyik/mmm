@@ -76,9 +76,9 @@ class Reg32(Block):
         self.endian = "<"
         self.bitsize = self.size * 8
         self.__regs = []
-        self.maxbits = self.maxnbit(self.bitsize)
+        self.maxbits = self._maxnbit(self.bitsize)
         
-    def maxnbit(self, size):
+    def _maxnbit(self, size):
         return ((2 ** size) - 1)
 
     def register(self, start, size, datapoint):
@@ -91,13 +91,13 @@ class Reg32(Block):
     def read(self):
         buffer = self.readraw()
         for start, size, datapoint in self.iterdatapoints():
-            value = (buffer >> (start)) & self.maxnbit(size)
+            value = (buffer >> (start)) & self._maxnbit(size)
             logger.debug("Reg32: reading %s bit value=%d from register %s start=%d, length=%d, data=%s",
                          datapoint.name, value, self.name, start, size, bin(buffer))
             datapoint.value = value
         return list(self)
     
-    def setbit(self, data32bit, start, size, value):
+    def _setbit(self, data32bit, start, size, value):
         # reset the related bits to 0
         data32bit = data32bit & ~((self.maxbits << (start + size)) ^ (self.maxbits << start)) & self.maxbits
         # set the new bits
@@ -108,7 +108,7 @@ class Reg32(Block):
         oldval = self.readraw()
         for start, size, datapoint in self.iterdatapoints():
             if datapoint.name == name:
-                super(Reg32, self).write(self.setbit(oldval, start, size, value))
+                super(Reg32, self).write(self._setbit(oldval, start, size, value))
                 return True
         
     def iterdatapoints(self):
