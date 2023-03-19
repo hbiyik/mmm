@@ -1,6 +1,6 @@
-from . import allwinner_a33
-from . import rk3588
 from libmmm import model
+from . import rk3588
+from . import allwinner_a33
 import inspect
 
 
