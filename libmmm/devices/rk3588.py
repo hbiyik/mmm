@@ -2,11 +2,11 @@ from libmmm.model import Device, Reg32, Datapoint
 
 
 class PVTM:
-    suffix = ""
+    devname = ""
     start = 0
     def __init__(self, start=None):
         start = start or self.start
-        super(PVTM, self).__init__(self.suffix + "_PVTM", start)
+        super(PVTM, self).__init__(self.devname, start)
         
         VERSION_REG = Reg32("VERSION", 0x0)
         self.block(VERSION_REG)
@@ -94,7 +94,7 @@ class PVTM:
 
 
 class GPIO:
-    suffix = ""
+    devname = ""
     start = 0
     
     def interleave16bits(self, addr, *REGS):
@@ -125,7 +125,7 @@ class GPIO:
    
     def __init__(self, start=None):
         start = start or self.start
-        super(GPIO, self).__init__("GPIO" + self.suffix, start)
+        super(GPIO, self).__init__(self.devname, start)
         
         self.interleave16bits(0x0, "DATA", "DIRECTION", "INT_ENANBLE", "INT_MASK",
                                     "INT_TYPE", "INT_POLARITY", "INT_BOTHEDGE",
@@ -157,45 +157,45 @@ class GPIO:
                 gpio += 1
 
 class GPIO0(GPIO, Device):
-    suffix = "0"
+    devname = "GPIO0"
     start = 0xFD8A0000
 
 class GPIO1(GPIO, Device):
-    suffix = "1"
+    devname = "GPIO1"
     start = 0xFEC20000
 
 class GPIO2(GPIO, Device):
-    suffix = "2"
+    devname = "GPIO2"
     start = 0xFEC30000
 
 class GPIO3(GPIO, Device):
-    suffix = "3"
+    devname = "GPIO3"
     start = 0xFEC40000
     
 class GPIO4(GPIO, Device):
-    suffix = "4"
+    devname = "GPIO4"
     start = 0xFEC50000
 
-#class PVTM_PMU(PVTM, Device):
-#    suffix = "PMU"
+#class PMU_PVTM(PVTM, Device):
+#    devname = "PMU_PVTM"
 #    start = 0xFD8C0000
 
 class CORE_B0_PVTM(PVTM, Device):
-    suffix = "CORE_B0"
+    devname = "CORE_B0_PVTM"
     start = 0xFDA40000
    
-#class PVTM_CORE_B1(PVTM, Device):
-#    suffix = "CORE_B1"
+#class CORE_B1_PVTM(PVTM, Device):
+#    devname = "CORE_B1_PVTM"
 #    start = 0xFDA50000
     
-#class PVTM_CORE_L(PVTM, Device):
-#    suffix = "CORE_L"
+#class CORE_L_PVTM(PVTM, Device):
+#    devname = "CORE_L_PVTM"
 #    start = 0xFDA60000
     
-#class PVTM_CORE_NPU(PVTM, Device):
-#    suffix = "CORE_NPU"
+#class CORE_NPU_PVTM(PVTM, Device):
+#    devname = "CORE_NPU_PVTM"
 #    start = 0xFDAF0000
     
-#class PVTM_CORE_GPU(PVTM, Device):
-#    suffix = "CORE_GPU"
+#class CORE_GPU_PVTM(PVTM, Device):
+#    devname = "CORE_GPU_PVTM"
 #    start = 0xFDB30000
