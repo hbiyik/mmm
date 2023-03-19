@@ -37,18 +37,19 @@ def iterfilter(io=None, read=False):
         if args.catalog is None or catalog == args.catalog:
             for device in catalogs:
                 device = device()
-                if io:
-                    device.io = io
                 if args.device is None or device.name ==  args.device:
                     for block in device:
                         if args.register is None or block.name ==  args.register:
                             if read:
+                                # attach the io only when needed so we wont mmap for no reason
+                                if io and not device.io:
+                                    device.io = io
                                 block.read()
                             for point in block:
                                 if args.point is None or point.name == args.point:
                                     yield catalog, device, block, point
-                if io:
-                    device.io.close()
+                        if device.io:
+                            device.io = None
 
 
 if args.command == "list":
@@ -66,5 +67,5 @@ elif args.command == "get":
 
 elif args.command == "set":
     for cat, device, block, point in iterfilter(Memory):
+        device.io = Memory
         block.write(point.name, args.value)
-        device.io.close()
