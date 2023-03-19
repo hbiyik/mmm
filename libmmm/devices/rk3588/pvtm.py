@@ -4,6 +4,8 @@ Created on Mar 19, 2023
 @author: boogie
 '''
 from libmmm.model import Device, Reg32, Datapoint
+from libmmm.devices.rockchip import RK_Reg32_16bitMasked
+
 
 class PVTM:
     devname = ""
@@ -17,21 +19,19 @@ class PVTM:
         VERSION_REG.register(0, 16, Datapoint("reserved", default=0))
         VERSION_REG.register(16, 16, Datapoint("VERSION", default=0x203))
         
-        CON0_REG = Reg32("CON0", 0x4)
+        CON0_REG = RK_Reg32_16bitMasked("CON0", 0x4)
         self.block(CON0_REG)
         CON0_REG.register(0, 1, Datapoint("START", default=0))
         CON0_REG.register(1, 1, Datapoint("OSC_EN", default=0))
         CON0_REG.register(2, 3, Datapoint("OSC_SEL", default=0))
         CON0_REG.register(5, 1, Datapoint("SEED_EN", default=0))
         CON0_REG.register(6, 10, Datapoint("reserved", default=0))
-        for i in range(16):
-            CON0_REG.register(16 + i, 1, Datapoint("WRITE_EN_%d" % i, default=0))
         
         CON1_REG = Reg32("CON1", 0x8)
         self.block(CON1_REG)
         CON1_REG.register(0, 32, Datapoint("CAL_CNT", default=0))
 
-        CON2_REG = Reg32("CON2", 0xC)
+        CON2_REG = RK_Reg32_16bitMasked("CON2", 0xC)
         self.block(CON2_REG)
         CON2_REG.register(0, 1, Datapoint("START_AUTO", default=0))
         CON2_REG.register(1, 1, Datapoint("OSC_EN_AUTO", default=0))
@@ -40,8 +40,6 @@ class PVTM:
         CON2_REG.register(6, 1, Datapoint("AVR_UPDATE_MODE", default=0))
         CON2_REG.register(7, 1, Datapoint("AVR_CAL_MODE", default=0))
         CON2_REG.register(8, 8, Datapoint("OSC_RING_AUTOSEL_EN", default=0))
-        for i in range(16):
-            CON2_REG.register(16 + i, 1, Datapoint("WRITE_EN_%d" % i, default=0))
 
         CON3_REG = Reg32("CON3", 0x10)
         self.block(CON3_REG)
