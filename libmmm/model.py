@@ -108,7 +108,7 @@ class Reg32(Block):
         if datapoint.validity and datapoint.validity.checkvalue(value):
             return datapoint.validity.getraw(value)
         else:
-            return value
+            return int(value)
     
     def write(self, name, value):
         oldval = self.readraw()
