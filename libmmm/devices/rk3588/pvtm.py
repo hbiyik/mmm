@@ -80,12 +80,12 @@ class PVTM:
         STATUS0_REG.register(1, 31, Datapoint("reserved", default=0))
         
         addr = 0x84
-        for reg, val in [("STATUS1", "freq_cnt"),
-                         ("STATUS2", "rnd_seed_low_bits"),
-                         ("STATUS3", "rnd_seed_hi_bits"),
-                         ("STATUS4", "min_value"),
-                         ("STATUS5", "avr_value"),
-                         ("STATUS6", "max_value")]:
+        for reg, val in [("STATUS1", "FREQ_CNT"),
+                         ("STATUS2", "RND_SEED_LOW_BITS"),
+                         ("STATUS3", "RND_SEED_HI_BITS"),
+                         ("STATUS4", "MIN_VALUE"),
+                         ("STATUS5", "AVR_VALUE"),
+                         ("STATUS6", "MAX_VALUE")]:
             REG = Reg32(reg, addr)
             self.block(REG)
             REG.register(0, 32, Datapoint(val, default=0))
