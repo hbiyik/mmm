@@ -61,17 +61,13 @@ class GPIO:
         self.block(reg)
         reg.register(0, 32, Datapoint("ID", default=0x101157c, validity=Validator(0, 2**32)))
         
-        self.interleave16bits(0x100, ("REG_REGORUP", None))
+        self.interleave16bits(0x100, ("REG_REGORUP", Validator(0, 1)))
         
-        reg = Reg32("VIRTUAL_EN", 0x108)
+        reg = RK_Reg32_16bitMasked("VIRTUAL_EN", 0x108)
         self.block(reg)
-        reg.register(0, 1, Datapoint("EN", default=0))
-        reg.register(1, 15, Datapoint("reserved", default=0))
-        gpio = 16
-        for col in ["A", "B"]:
-            for row in range(8):
-                reg.register(gpio, 1, Datapoint("%s%s" % (col, row), default=0))
-                gpio += 1
+        reg.register(0, 1, Datapoint("EN", default=0, validity=Validator(0, 1)))
+        reg.register(1, 15, Datapoint("reserved", default=0, validity=Validator(0, 2**15)))
+
 
 class GPIO0(GPIO, Device):
     devname = "GPIO0"
