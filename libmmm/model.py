@@ -251,7 +251,7 @@ class Validator:
         if self.valuemap:
             return self.valuemap.index(str(value).upper()) + self.intfrom
         else:
-            return value
+            return int(value)
         
     def getvalue(self, rawvalue):
         if self.valuemap:
