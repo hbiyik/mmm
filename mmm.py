@@ -37,9 +37,9 @@ def iterfilter(io=None, read=False):
         if args.catalog is None or catalog == args.catalog:
             for device in catalogs:
                 device = device()
-                if args.device is None or device.name ==  args.device:
+                if args.device is None or device.name == args.device:
                     for block in device:
-                        if args.register is None or block.name ==  args.register:
+                        if args.register is None or block.name == args.register:
                             if read:
                                 # attach the io only when needed so we wont mmap for no reason
                                 if io and not device.io:

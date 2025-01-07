@@ -29,7 +29,7 @@ class ClockPoint_NKMP(VirtualDatapoint):
         else:
             pval = p + 1
         return int(24 * (n + 1) * (k + 1) / ((m + 1) * pval) * self.factor)
-    
+
     def set(self, value):
         # TODO: Bounds check, and refactror for all variants, this does not work all the time
         value = int(value / 24)  # 24mhz step
@@ -37,7 +37,7 @@ class ClockPoint_NKMP(VirtualDatapoint):
         self.register.write(self.P, 0)
         self.register.write(self.K, 1)
         self.register.write(self.K, value - 1)
-    
+
 
 class CCU(Device):
     def __init__(self, start=0x01C20000):
