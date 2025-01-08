@@ -11,19 +11,12 @@ class BIGCORE_GRF:
     devname = ""
     start = 0
 
-    def __init__(self, start=None):
-        start = start or self.start
-        super(BIGCORE_GRF, self).__init__(self.devname, start)
-
+    def grfcommon(self):
         PVTPLL_CON0_L = RK_Reg32_16bitMasked("PVTPLL_CON0_L", 0x0)
         PVTPLL_CON0_H = RK_Reg32_16bitMasked("PVTPLL_CON0_H", 0x4)
         PVTPLL_CON1 = Reg32("PVTPLL_CON1", 0x8)
         PVTPLL_CON2 = Reg32("PVTPLL_CON2", 0xC)
         PVTPLL_CON3 = Reg32("PVTPLL_CON3", 0x10)
-        MEM_CFG_HSSPRF_L = RK_Reg32_16bitMasked("MEM_CFG_HSSPRF_L", 0x20)
-        MEM_CFG_HSDPRF_L = RK_Reg32_16bitMasked("MEM_CFG_HDSPRF_L", 0x28)
-        MEM_CFG_HSDPRF_H = RK_Reg32_16bitMasked("MEM_CFG_HDSPRF_H", 0x2c)
-        CPU_CON0 = RK_Reg32_16bitMasked("CPU_CON0", 0x30)
 
         self.block(PVTPLL_CON0_L)
         PVTPLL_CON0_L.register(0, 1, Datapoint("START", default=0, validity=Validator(0, 1)))
@@ -49,39 +42,78 @@ class BIGCORE_GRF:
         self.block(PVTPLL_CON3)
         PVTPLL_CON3.register(0, 32, Datapoint("REF_CNT", default=0x18, validity=Validator(0, 2**32)))
 
-        self.block(MEM_CFG_HSSPRF_L)
-        MEM_CFG_HSSPRF_L.register(0, 1, Datapoint("TEST1", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSSPRF_L.register(1, 1, Datapoint("TEST_RNM", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSSPRF_L.register(2, 3, Datapoint("RM", default=0x2, validity=Validator(0, 8)))
-        MEM_CFG_HSSPRF_L.register(5, 1, Datapoint("WMD", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSSPRF_L.register(6, 1, Datapoint("reserved", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSSPRF_L.register(7, 1, Datapoint("LS", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSSPRF_L.register(8, 4, Datapoint("reserved", default=0x0, validity=Validator(0, 16)))
-        MEM_CFG_HSSPRF_L.register(12, 2, Datapoint("RA", default=0x0, validity=Validator(0, 4)))
-        MEM_CFG_HSSPRF_L.register(14, 2, Datapoint("reserved", default=0x2, validity=Validator(0, 4)))
+    def memcfg1(self, name, offset):
+        MEM_CFG = RK_Reg32_16bitMasked(name, offset)
+        self.block(MEM_CFG)
+        MEM_CFG.register(0, 1, Datapoint("TEST1", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(1, 1, Datapoint("TEST_RNM", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(2, 3, Datapoint("RM", default=0x2, validity=Validator(0, 8)))
+        MEM_CFG.register(5, 1, Datapoint("WMD", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(6, 1, Datapoint("reserved", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(7, 1, Datapoint("LS", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(8, 4, Datapoint("reserved", default=0x0, validity=Validator(0, 16)))
+        MEM_CFG.register(12, 2, Datapoint("RA", default=0x0, validity=Validator(0, 4)))
+        MEM_CFG.register(14, 2, Datapoint("reserved", default=0x2, validity=Validator(0, 4)))
 
-        self.block(MEM_CFG_HSDPRF_L)
-        MEM_CFG_HSDPRF_L.register(0, 1, Datapoint("TEST1A", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSDPRF_L.register(1, 1, Datapoint("TEST_RNMA", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSDPRF_L.register(2, 4, Datapoint("RMA", default=0x1, validity=Validator(0, 16)))
-        MEM_CFG_HSDPRF_L.register(6, 1, Datapoint("WMDA", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSDPRF_L.register(8, 1, Datapoint("LS", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSDPRF_L.register(9, 4, Datapoint("reserved", default=0x0, validity=Validator(0, 16)))
-        MEM_CFG_HSDPRF_L.register(13, 2, Datapoint("RA", default=0x0, validity=Validator(0, 4)))
-        MEM_CFG_HSDPRF_L.register(15, 1, Datapoint("reserved", default=0x0, validity=Validator(0, 1)))
+    def memcfg2(self, name, offset):
+        MEM_CFG = RK_Reg32_16bitMasked(name, offset)
 
-        self.block(MEM_CFG_HSDPRF_H)
-        MEM_CFG_HSDPRF_H.register(0, 1, Datapoint("reserved", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSDPRF_H.register(1, 1, Datapoint("TEST1B", default=0x0, validity=Validator(0, 1)))
-        MEM_CFG_HSDPRF_H.register(2, 4, Datapoint("RMB", default=0x3, validity=Validator(0, 16)))
-        MEM_CFG_HSDPRF_H.register(6, 9, Datapoint("reserved", default=0x0, validity=Validator(0, 2**9)))
+        self.block(MEM_CFG)
+        MEM_CFG.register(0, 1, Datapoint("reserved", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(1, 1, Datapoint("TEST1B", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(2, 4, Datapoint("RMB", default=0x3, validity=Validator(0, 16)))
+        MEM_CFG.register(6, 9, Datapoint("reserved", default=0x0, validity=Validator(0, 2**9)))
 
+    def memcfg3(self, name, offset):
+        MEM_CFG = RK_Reg32_16bitMasked(name, offset)
+
+        self.block(MEM_CFG)
+        MEM_CFG.register(0, 1, Datapoint("TEST1", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(1, 1, Datapoint("TEST_RNM", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(2, 3, Datapoint("RM", default=0x2, validity=Validator(0, 8)))
+        MEM_CFG.register(5, 1, Datapoint("WMD", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(6, 1, Datapoint("reserved", default=0x0, validity=Validator(0, 1)))
+        MEM_CFG.register(7, 1, Datapoint("LS", default=0x0, validity=Validator(0, 1)))
+
+    def bigcore_cfg(self):
+        self.memcfg1("MEM_CFG_HSSPRF_L", 0x20)
+        self.memcfg1("MEM_CFG_HDSPRF_L", 0x28)
+        self.memcfg2("MEM_CFG_HDSPRF_H", 0x2c)
+
+        CPU_CON0 = RK_Reg32_16bitMasked("CPU_CON0", 0x30)
         self.block(CPU_CON0)
         for i in range(4):
             CPU_CON0.register(0 + i, 1, Datapoint("CORE%d_MEM_CTRL_FROM_PMU" % i, default=0, validity=Validator(0, 1)))
         CPU_CON0.register(4, 1, Datapoint("MEM_CFG_IDLE_EN", default=0, validity=Validator(0, 1)))
         CPU_CON0.register(5, 1, Datapoint("MEM_CFG_IDLE_TRIG", default=0, validity=Validator(0, 1)))
         CPU_CON0.register(6, 10, Datapoint("reserved", default=0, validity=Validator(0, 2**10)))
+
+    def gpu_conf(self):
+        self.memcfg1("MEMCFG0", 0x24)
+        self.memcfg1("MEMCFG1", 0x28)
+
+        CON1 = RK_Reg32_16bitMasked("CON1", 0x40)
+        self.block(CON1)
+        CON1.register(0, 4, Datapoint("stripping_granule", default=0, validity=Validator(0, 2 ** 4 - 1)))
+        CON1.register(4, 1, Datapoint("ckg_en", default=0, validity=Validator(0, 1)))
+        CON1.register(5, 1, Datapoint("halted_en", default=0, validity=Validator(0, 1)))
+        CON1.register(6, 1, Datapoint("protmode_en", default=0, validity=Validator(0, 1)))
+
+        STATUS = RK_Reg32_16bitMasked("STATUS", 0x44)
+        self.block(STATUS)
+        STATUS.register(0, 1, Datapoint("dormantstate", default=0, validity=Validator(0, 1)))
+        STATUS.register(1, 1, Datapoint("swactive", default=0, validity=Validator(0, 1)))
+
+    def __init__(self, start=None):
+        start = start or self.start
+        super(BIGCORE_GRF, self).__init__(self.devname, start)
+        self.grfcommon()
+
+        if self.name.startswith("BIGCORE"):
+            self.bigcore_cfg()
+
+        if self.name.startswith("GPU"):
+            self.gpu_conf()
 
 
 class BIGCORE0_GRF(BIGCORE_GRF, Device):
@@ -92,3 +124,8 @@ class BIGCORE0_GRF(BIGCORE_GRF, Device):
 class BIGCORE1_GRF(BIGCORE_GRF, Device):
     devname = "BIGCORE1_GRF"
     start = 0xFD592000
+
+
+class GPU_GRF(BIGCORE_GRF, Device):
+    devname = "GPU_GRF"
+    start = 0xFD5A0000
