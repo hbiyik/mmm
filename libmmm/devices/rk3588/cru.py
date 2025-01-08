@@ -3,13 +3,30 @@ Created on Mar 19, 2023
 
 @author: boogie
 '''
-from libmmm.model import Device, Reg32, Datapoint, Validator, VirtualDatapoint
+from libmmm.model import Device, Datapoint, Validator, VirtualDatapoint
 from libmmm.devices.rockchip import RK_Reg32_16bitMasked
+
+
+def _divided_freqs(*clocks, minfreq=100, maxdiv=32):
+    freqs = []
+    for clock in clocks:
+        div = int(clock / minfreq)
+        while div:
+            freq = (clock / div)
+            freqs.append([int(freq), clock, div])
+            div -= 1
+    return sorted(freqs)
+
+
+def divided_freqs(*base_regs, minfreq=100, maxdiv=32):
+    return _divided_freqs(*[x.get("clock").value for x in base_regs if x],
+                          minfreq=minfreq,
+                          maxdiv=maxdiv)
 
 
 class ClkSel(VirtualDatapoint):
     def __init__(self, reg, gpll, cpll, aupll, npll, spll, name="clock"):
-        VirtualDatapoint.__init__(self, name, unit="hz")
+        VirtualDatapoint.__init__(self, name, unit="Mhz")
         self.reg = reg
         self.clockregs = {"GPLL": gpll,
                           "CPLL": cpll,
@@ -29,8 +46,8 @@ class ClkSel(VirtualDatapoint):
 
 
 class FracPLL(VirtualDatapoint):
-    def __init__(self, con0, con1, con2, basef=24000000, factor=1, name="clock"):
-        VirtualDatapoint.__init__(self, name, unit="hz")
+    def __init__(self, con0, con1, con2, basef=24, factor=1, name="clock"):
+        VirtualDatapoint.__init__(self, name, unit="Mhz")
         self.con0 = con0
         self.con1 = con1
         self.con2 = con2
@@ -52,8 +69,8 @@ class FracPLL(VirtualDatapoint):
 
 
 class IntPLL(VirtualDatapoint):
-    def __init__(self, con0, con1, basef=24000000, name="clock"):
-        VirtualDatapoint.__init__(self, name, unit="hz")
+    def __init__(self, con0, con1, basef=24, name="clock"):
+        VirtualDatapoint.__init__(self, name, unit="Mhz")
         self.con0 = con0
         self.con1 = con1
         self.basef = basef
@@ -64,7 +81,10 @@ class IntPLL(VirtualDatapoint):
         m = self.con0.get("m").value
         p = self.con1.get("p").value
         s = self.con1.get("s").value
-        return int((m * self.basef) / (p * (2 ** s)))
+        try:
+            return int((m * self.basef) / (p * (2 ** s)))
+        except ZeroDivisionError:
+            return 0
 
     def set(self, value):
         pass
@@ -155,7 +175,7 @@ class CRU(Device):
         offset += 4
         PLL_CON5 = RK_Reg32_16bitMasked(f"{name}_CON5", offset)
         offset += 4
-        PLL_CON6 = RK_Reg32_16bitMasked(f"{name}L_CON6", offset)
+        PLL_CON6 = RK_Reg32_16bitMasked(f"{name}_CON6", offset)
         offset += 4
 
         self.block(PLL_CON4)
@@ -193,3 +213,14 @@ class CRU(Device):
         self.reg_gpll = self.fracpll_con(0x1c0, "GPLL")
         self.reg_npll = self.intpll_con(0x1e0, "NPLL")
         self.clksel(0x578, "GPU")
+
+
+class SBUSCRU(CRU):
+    devname = "SBUSCRU"
+    start = 0xFD7D8000
+
+    def __init__(self, start=None):
+        start = start or self.start
+        Device.__init__(self, self.devname, start)
+
+        self.reg_spll = self.intpll_con(0x220, "SPLL")
