@@ -15,8 +15,7 @@ def addfilters(parser, required=False):
     parser.add_argument("-p", "--point", required=required)
 
 
-
-parser = argparse.ArgumentParser(prog = 'mmm')
+parser = argparse.ArgumentParser(prog='mmm')
 
 arg_command = parser.add_subparsers(dest="command", required=True)
 arg_list = arg_command.add_parser('list', help="list available registers")

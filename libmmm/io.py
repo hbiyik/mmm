@@ -3,7 +3,9 @@ Created on Nov 4, 2022
 
 @author: boogie
 '''
-import os, mmap, binascii
+import os
+import mmap
+import binascii
 from libmmm.model import Io
 from libmmm.helper import logger
 
@@ -33,20 +35,20 @@ class Memory(Io):
         self.bindstart = start
         self.bindsize = size
         super(Memory, self).init()
-        
+
     def readio(self, start, size):
         self.mmap.seek(self.startoffset + start)
         val = self.mmap.read(size)
         logger.debug("%s read start: %s, size: %d, val: 0x%s", self.dev, hex(self.start + self.startoffset + start), size, binascii.hexlify(val).decode())
         return val
-    
+
     def writeio(self, start, data):
         logger.debug("%s write start: %s data: 0x%s", self.dev, hex(self.start + self.startoffset + start), binascii.hexlify(data).decode())
         self.mmap.seek(self.startoffset + start)
         retval = self.mmap.write(data)
         logger.debug("%s is written with %d length", self.dev, retval)
         return retval
-        
+
     def close(self):
         if self.isinited:
             logger.debug("%s unbinding: [%d (%s), %d (%s)]", self.dev,
