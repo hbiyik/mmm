@@ -96,25 +96,29 @@ class PVTM:
         STATUS7_REG.register(16, 16, Datapoint("AVR_CNT", default=0))
 
 
-#class PMU_PVTM(PVTM, Device):
-#    devname = "PMU_PVTM"
-#    start = 0xFD8C0000
+class PMU_PVTM(PVTM, Device):
+    devname = "PMU_PVTM"
+    start = 0xFD8C0000
+
 
 class CORE_B0_PVTM(PVTM, Device):
     devname = "CORE_B0_PVTM"
     start = 0xFDA40000
-   
-#class CORE_B1_PVTM(PVTM, Device):
-#    devname = "CORE_B1_PVTM"
-#    start = 0xFDA50000
-    
-#class CORE_L_PVTM(PVTM, Device):
-#    devname = "CORE_L_PVTM"
-#    start = 0xFDA60000
-    
-#class CORE_NPU_PVTM(PVTM, Device):
-#    devname = "CORE_NPU_PVTM"
-#    start = 0xFDAF0000
+
+
+class CORE_B1_PVTM(PVTM, Device):
+    devname = "CORE_B1_PVTM"
+    start = 0xFDA50000
+
+
+class CORE_L_PVTM(PVTM, Device):
+    devname = "CORE_L_PVTM"
+    start = 0xFDA60000
+
+
+class CORE_NPU_PVTM(PVTM, Device):
+    devname = "CORE_NPU_PVTM"
+    start = 0xFDAF0000
 
 
 class CORE_GPU_PVTM(PVTM, Device):

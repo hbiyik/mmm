@@ -9,6 +9,7 @@ def getdevices(mod):
         attr_type = getattr(mod, attr)
         if inspect.isclass(attr_type) and issubclass(attr_type, model.Device) and attr_type is not model.Device:
             yield attr_type
-    
+
+
 catalogs = {"a33": list(getdevices(allwinner_a33)),
             "rk3588": list(getdevices(rk3588))}

@@ -1,4 +1,4 @@
 from .gpio import GPIO0, GPIO1, GPIO2, GPIO3, GPIO4
-from .pvtm import CORE_B0_PVTM
+from .pvtm import CORE_B0_PVTM, CORE_B1_PVTM, PMU_PVTM, CORE_L_PVTM, CORE_NPU_PVTM, CORE_GPU_PVTM
 from .grf import BIGCORE0_GRF, BIGCORE1_GRF, GPU_GRF
-from .cru import CRU
+from .cru import CRU, SBUSCRU

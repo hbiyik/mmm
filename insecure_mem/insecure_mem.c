@@ -44,7 +44,7 @@ static ssize_t insec_mem_proc_write(struct file *filp, const char __user *buffer
 	
 	if (virt == NULL)
 		return -EFAULT;
-    //(void)! is only to surpress useless warning messages that are interpreted as error
+
 	(void)!copy_from_user(virt, buffer, count);
 	*ppos += count;
 	return count;

@@ -6,6 +6,6 @@ Created on Nov 4, 2022
 import logging
 
 LOGLEVEL = logging.INFO
-# LOGLEVEL = logging.DEBUG
+LOGLEVEL = logging.ERROR
 logging.basicConfig(level=LOGLEVEL, format='%(message)s')
 logger = logging.getLogger("mmm")
