@@ -94,7 +94,7 @@ class CRU(Device):
     devname = "CRU"
     start = 0xFD7C0000
 
-    def clksel(self, offset, name):
+    def clksel_mux_snacg_pll_pvt(self, offset, name):
         CLKSEL_CON = RK_Reg32_16bitMasked(f"{name}_CLKSEL", offset)
         self.block(CLKSEL_CON)
         CLKSEL_CON.register(0, 5, Datapoint("div", default=0, validity=Validator(0, 2 ** 5 - 1)))
@@ -134,7 +134,7 @@ class CRU(Device):
         offset += 4
         PLL_CON5 = RK_Reg32_16bitMasked(f"{name}_CON5", offset)
         offset += 4
-        PLL_CON6 = RK_Reg32_16bitMasked(f"{name}L_CON6", offset)
+        PLL_CON6 = RK_Reg32_16bitMasked(f"{name}_CON6", offset)
         offset += 4
 
         self.block(PLL_CON2)
@@ -142,6 +142,9 @@ class CRU(Device):
         self.block(PLL_CON4)
         self.block(PLL_CON5)
         self.block(PLL_CON6)
+
+        for i in range(7):
+            self.addgroup(name, f"{name}_CON{i}")
 
         PLL_CON2.register(0, 16, Datapoint("k", default=0, validity=Validator(0, 2**16 - 1)))
 
@@ -164,6 +167,7 @@ class CRU(Device):
         PLL_CON6.register(10, 5, Datapoint("afc_code", default=0, validity=Validator(0, 2**5 - 1)))
         PLL_CON6.register(15, 1, Datapoint("lock", default=0, validity=Validator(0, 1)))
         PLL_CON0.register(None, None, FracPLL(PLL_CON0, PLL_CON1, PLL_CON2))
+
         return PLL_CON0
 
     def intpll_con(self, offset, name):
@@ -181,6 +185,12 @@ class CRU(Device):
         self.block(PLL_CON4)
         self.block(PLL_CON5)
         self.block(PLL_CON6)
+
+        self.addgroup(name, f"{name}_CON0")
+        self.addgroup(name, f"{name}_CON1")
+        self.addgroup(name, f"{name}_CON4")
+        self.addgroup(name, f"{name}_CON5")
+        self.addgroup(name, f"{name}_CON6")
 
         PLL_CON4.register(0, 1, Datapoint("reserved", default=0, validity=Validator(0, 1)))
         PLL_CON4.register(1, 2, Datapoint("icp", default=0, validity=Validator(0, 3)))
@@ -212,7 +222,7 @@ class CRU(Device):
         self.reg_cpll = self.fracpll_con(0x1a0, "CPLL")
         self.reg_gpll = self.fracpll_con(0x1c0, "GPLL")
         self.reg_npll = self.intpll_con(0x1e0, "NPLL")
-        self.clksel(0x578, "GPU")
+        self.clksel_mux_snacg_pll_pvt(0x578, "GPU")
 
 
 class SBUSCRU(CRU):

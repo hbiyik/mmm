@@ -4,6 +4,7 @@ Created on Apr 18, 2025
 @author: boogie
 '''
 
+import time
 import curses
 import curses.textpad
 
@@ -27,7 +28,8 @@ class Screen:
 
         self.width = 0
         self.height = 0
-        curses.set_escdelay(25)
+        self.delay = 1
+        self.keydelay = 0.025
         self.init_curses()
 
         self.options = {}
@@ -54,45 +56,59 @@ class Screen:
     def back(self):
         self.init(*self.prevs.pop(), prev=False)
 
-    def on_active(self):
-        opt = self.getopt()
-        txt = f"{opt[0]}"
+    def updateheader(self):
+        optkey = self.getoptkey()
+        header = optkey
         if self.level == LEVEL_POINT:
-            register = opt[1]
+            register = self.getopt()
+            pointname = optkey.split(".")[1]
             txts = []
-            if register.unit is not None:
-                txts.append(f"unit: {register.unit}")
-            if register.default is not None:
-                txts.append(f"default={register.default}")
-            if register.validity:
-                txts.append(f"validity={register.validity.help()}")
-            txt += " ".join(txts)
-        self.headers[1] += txt
+            datapoint = register.get(pointname)
+            if datapoint.unit is not None:
+                txts.append(f"unit: {datapoint.unit}")
+            if datapoint.default is not None:
+                txts.append(f"default={datapoint.default}")
+            if datapoint.validity:
+                txts.append(f"validity={datapoint.validity.help()}")
+            header += " " + " ".join(txts)
+        self.headers[1] += header
+
+    def on_display(self, optname, opt):
+        val = optname
+        if self.level == LEVEL_POINT:
+            register = opt
+            register.read()
+            datapoint = register.get(optname.split(".")[1])
+            val = f"{datapoint.name} = {datapoint.value}"
+            if datapoint.unit:
+                val += f" {datapoint.unit}"
+        self.updateheader()
+        return val
 
     def on_select(self):
         options = {}
         if self.level is None:
             for catname, Devices in devices.catalogs.items():
-                options[catname] = catname, Devices
+                options[catname] = Devices
             self.init(options, level=LEVEL_CATALOG, prev=False)
         elif self.level == LEVEL_CATALOG:
-            _, Devices = self.getopt()
+            Devices = self.getopt()
             for Device in Devices:
                 device = Device()
-                options[device.name] = device.name, device
+                options[device.name] = device
             self.init(options, LEVEL_DEVICE)
         elif self.level == LEVEL_DEVICE:
-            _, device = self.getopt()
+            device = self.getopt()
             if not device.io:
                 device.io = io.Memory
-            for register in device:
-                options[register.name] = register.name, register
-            self.init(options, LEVEL_REGISTER)
+            self.init(dict(device.itergroups()), LEVEL_REGISTER)
         elif self.level == LEVEL_REGISTER:
-            _, register = self.getopt()
-            register.read()
-            for point in register:
-                options[point.name] = f"{point.name} = {point.value}", point
+            for register in self.getopt():
+                register.read()
+                for point in register:
+                    if "reserved" in point.name.lower():
+                        continue
+                    options[f"{register.name}.{point.name}"] = register
             self.init(options, LEVEL_POINT)
 
     def init(self, options, level=None, current=0, prev=True):
@@ -100,7 +116,7 @@ class Screen:
             self.prevs.append([self.options, self.level, self.current])
         paths = []
         for prev_opts, _prev_level, prev_current in self.prevs:
-            paths.append(prev_opts[list(prev_opts)[prev_current]][0])
+            paths.append(list(prev_opts)[prev_current])
         self.path = ">".join(paths)
         self.level = level
         self.options = options
@@ -115,6 +131,8 @@ class Screen:
 
         curses.noecho()
         curses.cbreak()
+        curses.set_escdelay(int(self.keydelay * 1000))
+        self.window.nodelay(True)
 
         curses.start_color()
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
@@ -141,6 +159,8 @@ class Screen:
             self.display()
 
             ch = self.window.getch()
+            if ch == -1:
+                time.sleep(self.keydelay)
             if ch == curses.KEY_UP:
                 self.scroll(self.UP)
             elif ch == curses.KEY_DOWN:
@@ -192,12 +212,11 @@ class Screen:
         self.height, self.width = self.window.getmaxyx()
         self.window.erase()
         row = 0
-        for _key, (optname, _opt) in self.options.items():
+        for optname, opt in self.options.items():
             if row < self.top or row >= self.top + self.max_lines:
                 continue
             self.headers[1] = f"{self.path} "
-            self.on_active()
-            val = optname
+            val = self.on_display(optname, opt)
             if row == self.current:
                 self.window.addstr(row + len(self.headers), 0, val, curses.color_pair(2))
             else:

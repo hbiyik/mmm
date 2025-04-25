@@ -1,5 +1,6 @@
 from libmmm import model
 from . import rk3588
+from . import rk3528
 from . import allwinner_a33
 import inspect
 
@@ -12,4 +13,5 @@ def getdevices(mod):
 
 
 catalogs = {"a33": list(getdevices(allwinner_a33)),
-            "rk3588": list(getdevices(rk3588))}
+            "rk3588": list(getdevices(rk3588)),
+            "rk3528": list(getdevices(rk3528))}

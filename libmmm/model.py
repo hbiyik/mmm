@@ -14,6 +14,26 @@ class Device:
         self.size = 0
         self.__blocks = []
         self.__io = None
+        self.groups = {}
+
+    def addgroup(self, groupname, blockname):
+        block = self.getblock(blockname)
+        if not block:
+            return
+        if groupname not in self.groups:
+            self.groups[groupname] = []
+        self.groups[groupname].append(block)
+        return True
+
+    def itergroups(self):
+        blocks = []
+        for groupname, blocklist in self.groups.items():
+            blocks.extend([block.name for block in blocklist])
+            yield groupname, blocklist
+        for block in self:
+            if block.name in blocks:
+                continue
+            yield block.name, [block]
 
     @property
     def io(self):

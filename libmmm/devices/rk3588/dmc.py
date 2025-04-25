@@ -3,10 +3,11 @@ Created on Apr 6, 2023
 
 @author: z0042jww
 '''
+from libmmm.model import Device
 from libmmm.model import Reg32, Datapoint, Validator
 
 
-class DDRCTL:
+class DDRCTL(Device):
     devname = ""
     start = 0
 
@@ -40,3 +41,28 @@ class DDRCTL:
         TMG4.register(8, 6, Datapoint("TRRD", default=0x4, validity=Validator(0, 2 ** 8)))
         TMG4.register(16, 6, Datapoint("TCCD", default=0x4, validity=Validator(0, 2 ** 7)))
         TMG4.register(24, 6, Datapoint("TRCD", default=0x5, validity=Validator(0, 2 ** 7)))
+
+        self.block(TMG0)
+        self.block(TMG1)
+        self.block(TMG2)
+        self.block(TMG3)
+
+
+class DDRCTL_0(DDRCTL):
+    devname = "DDRCTL0"
+    start = 0xF7000000
+
+
+class DDRCTL_1(DDRCTL):
+    devname = "DDRCTL1"
+    start = 0xF8000000
+
+
+class DDRCTL_2(DDRCTL):
+    devname = "DDRCTL2"
+    start = 0xF9000000
+
+
+class DDRCTL_3(DDRCTL):
+    devname = "DDRCTL3"
+    start = 0xFA000000

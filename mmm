@@ -6,4 +6,10 @@ Created on Nov 1, 2022
 '''
 from libmmm import tui
 
+REMOTE_DBG = None
+
+if REMOTE_DBG:
+    import pydevd  # @UnresolvedImport
+    pydevd.settrace(REMOTE_DBG, stdoutToServer=True, stderrToServer=True, suspend=False)
+
 tui.Screen("mmm (Memory Map Manipulator)").run()
