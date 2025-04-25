@@ -3,3 +3,4 @@ from .pvtm import CORE_B0_PVTM, CORE_B1_PVTM, PMU_PVTM, CORE_L_PVTM, CORE_NPU_PV
 from .grf import BIGCORE0_GRF, BIGCORE1_GRF, GPU_GRF
 from .cru import CRU, SBUSCRU
 from .dmc import DDRCTL_0, DDRCTL_1, DDRCTL_2, DDRCTL_3
+from .pmu import PMU
