@@ -211,10 +211,10 @@ class Screen:
     def display(self):
         self.height, self.width = self.window.getmaxyx()
         self.window.erase()
-        row = 0
-        for optname, opt in self.options.items():
-            if row < self.top or row >= self.top + self.max_lines:
+        for index, (optname, opt) in enumerate(self.options.items()):
+            if index < self.top or index >= self.top + self.max_lines:
                 continue
+            row = index - self.top
             self.headers[1] = f"{self.path} "
             val = self.on_display(optname, opt)
             if row == self.current:

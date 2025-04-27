@@ -7,7 +7,7 @@ from libmmm.model import Device, Reg32, Datapoint, Validator
 from libmmm.devices.rockchip import RK_Reg32_16bitMasked
 
 
-class BIGCORE_GRF:
+class BIGCORE_GRF(Device):
     devname = ""
     start = 0
 
@@ -41,6 +41,11 @@ class BIGCORE_GRF:
 
         self.block(PVTPLL_CON3)
         PVTPLL_CON3.register(0, 32, Datapoint("REF_CNT", default=0x18, validity=Validator(0, 2**32)))
+        self.addgroup("PVTPLL_CON", "PVTPLL_CON0_L")
+        self.addgroup("PVTPLL_CON", "PVTPLL_CON0_H")
+        self.addgroup("PVTPLL_CON", "PVTPLL_CON1")
+        self.addgroup("PVTPLL_CON", "PVTPLL_CON2")
+        self.addgroup("PVTPLL_CON", "PVTPLL_CON3")
 
     def memcfg1(self, name, offset):
         MEM_CFG = RK_Reg32_16bitMasked(name, offset)
@@ -54,6 +59,7 @@ class BIGCORE_GRF:
         MEM_CFG.register(8, 4, Datapoint("reserved", default=0x0, validity=Validator(0, 16)))
         MEM_CFG.register(12, 2, Datapoint("RA", default=0x0, validity=Validator(0, 4)))
         MEM_CFG.register(14, 2, Datapoint("reserved", default=0x2, validity=Validator(0, 4)))
+        self.addgroup("MEMCFG", name)
 
     def memcfg2(self, name, offset):
         MEM_CFG = RK_Reg32_16bitMasked(name, offset)
@@ -63,6 +69,7 @@ class BIGCORE_GRF:
         MEM_CFG.register(1, 1, Datapoint("TEST1B", default=0x0, validity=Validator(0, 1)))
         MEM_CFG.register(2, 4, Datapoint("RMB", default=0x3, validity=Validator(0, 16)))
         MEM_CFG.register(6, 9, Datapoint("reserved", default=0x0, validity=Validator(0, 2**9)))
+        self.addgroup("MEMCFG", name)
 
     def memcfg3(self, name, offset):
         MEM_CFG = RK_Reg32_16bitMasked(name, offset)
@@ -74,6 +81,7 @@ class BIGCORE_GRF:
         MEM_CFG.register(5, 1, Datapoint("WMD", default=0x0, validity=Validator(0, 1)))
         MEM_CFG.register(6, 1, Datapoint("reserved", default=0x0, validity=Validator(0, 1)))
         MEM_CFG.register(7, 1, Datapoint("LS", default=0x0, validity=Validator(0, 1)))
+        self.addgroup("MEMCFG", name)
 
     def bigcore_cfg(self):
         self.memcfg1("MEM_CFG_HSSPRF_L", 0x20)
@@ -116,16 +124,16 @@ class BIGCORE_GRF:
             self.gpu_conf()
 
 
-class BIGCORE0_GRF(BIGCORE_GRF, Device):
+class BIGCORE0_GRF(BIGCORE_GRF):
     devname = "BIGCORE0_GRF"
     start = 0xFD590000
 
 
-class BIGCORE1_GRF(BIGCORE_GRF, Device):
+class BIGCORE1_GRF(BIGCORE_GRF):
     devname = "BIGCORE1_GRF"
     start = 0xFD592000
 
 
-class GPU_GRF(BIGCORE_GRF, Device):
+class GPU_GRF(BIGCORE_GRF):
     devname = "GPU_GRF"
     start = 0xFD5A0000
