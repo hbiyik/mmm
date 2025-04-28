@@ -79,7 +79,7 @@ class Screen:
             register = opt
             register.read()
             datapoint = register.get(optname.split(".")[1])
-            val = f"{datapoint.name} = {datapoint.value}"
+            val = f"{register.name}.{datapoint.name} = {datapoint.value}"
             if datapoint.unit:
                 val += f" {datapoint.unit}"
         self.updateheader()
