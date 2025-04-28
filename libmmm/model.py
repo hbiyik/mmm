@@ -97,6 +97,8 @@ class Reg32(Block):
         self.bitsize = self.size * 8
         self.__regs = []
         self.maxbits = self._maxnbit(self.bitsize)
+        self.allowread = True
+        self.allowwrite = True
 
     def _maxnbit(self, size):
         return ((2 ** size) - 1)
@@ -109,6 +111,8 @@ class Reg32(Block):
         return struct.unpack("%sI" % self.endian, buffer.value)[0]
 
     def read(self):
+        if not self.allowread:
+            raise RuntimeError("Write only register, reading is not supported")
         buffer = self.readraw()
         for start, size, datapoint in self.iterdatapoints():
             if start is None or size is None:
@@ -133,6 +137,8 @@ class Reg32(Block):
             return int(value)
 
     def write(self, name, value):
+        if not self.allowwrite:
+            raise RuntimeError("Read only register, writing is not supported")
         oldval = self.readraw()
         for start, size, datapoint in self.iterdatapoints():
             if datapoint.name == name:

@@ -68,6 +68,7 @@ class PMU(Device):
         for i, domainlist in enumerate(iterlistchunks(GATE_LISTS, 32)):
             _regname = f"{regname}{i}"
             reg = Reg32(_regname, offset)
+            reg.allowwrite = False
             for j, domain in enumerate(domainlist):
                 reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, "ON", "OFF")))
             self.block(reg)
@@ -80,6 +81,7 @@ class PMU(Device):
             for i, domainlist in enumerate(STATUS_LISTS):
                 _regname = f"{regname}_{prefix}{i}"
                 reg = Reg32(_regname, offset)
+                reg.allowwrite = False
                 for j, domain in enumerate(domainlist):
                     reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, *validmap)))
                 self.block(reg)
@@ -91,6 +93,7 @@ class PMU(Device):
             for i, domainlist in enumerate(iterlistchunks(GATE_LISTS, 16)):
                 _regname = f"{regname}{i}"
                 reg = RK_Reg32_16bitMasked(_regname, offset)
+                reg.allowwrite = False
                 for j, domain in enumerate(domainlist):
                     reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, "ON", "OFF")))
                 self.block(reg)
