@@ -15,8 +15,21 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from libmmm.model import Device, Reg32, Datapoint, Validator
+from libmmm.model import Device, Reg32, Datapoint, Validator, VirtualDatapoint
 from libmmm.devices.rockchip import RK_Reg32_16bitMasked
+
+
+class PvtPllClock(VirtualDatapoint):
+    def __init__(self, reg, con, name="pvtpll_clock", clkin=24):
+        VirtualDatapoint.__init__(self, name, unit="Mhz")
+        self.reg = reg
+        self.con = con
+        self.clkin = clkin
+
+    def get(self):
+        self.reg.read()
+        self.con.read()
+        return int(self.clkin / self.con.get("CAL_CNT").value * self.reg.get("OSC_CNT_AVG").value)
 
 
 class GRF(Device):
@@ -62,6 +75,7 @@ class GRF(Device):
         self.block(PVTPLL_STATUS1)
         PVTPLL_STATUS1.register(0, 32, Datapoint("OSC_CNT_AVG", default=0x0, validity=Validator(0, 2 ** 32 - 1)))
         PVTPLL_STATUS1.allowwrite = False
+        PVTPLL_STATUS1.register(None, None, PvtPllClock(PVTPLL_STATUS1, PVTPLL_CON1))
 
         self.addgroup("PVTPLL_CON", "PVTPLL_CON0_L")
         self.addgroup("PVTPLL_CON", "PVTPLL_CON0_H")
@@ -138,7 +152,7 @@ class GRF(Device):
 
     def __init__(self, start=None):
         start = start or self.start
-        super(BIGCORE_GRF, self).__init__(self.devname, start)
+        super(GRF, self).__init__(self.devname, start)
         self.grfcommon()
 
         if self.name.startswith("BIGCORE"):
