@@ -5,6 +5,7 @@ Created on Apr 6, 2023
 '''
 from libmmm.model import Device, Datapoint, Validator, Reg32
 from libmmm.devices.rockchip import RK_Reg32_16bitMasked
+from libmmm import common
 
 # pd/vd domains
 PD_PMU1 = "PD_PMU1"
@@ -102,11 +103,6 @@ BIU_TOP = "BIU_TOP"
 BIU_DDRSCH2 = "BIU_DDRSCH2"
 BIU_DDRSCH3 = "BIU_DDRSCH3"
 
-ON = "ON"
-OFF = "OFF"
-ENABLED = "ENABLED"
-DISABLED = "DISABLED"
-
 
 STATUS_LIST = [PD_PMU1, VD_GPU, PD_NPUTOP, PD_NPU1, PD_NPU2, PD_VENC0, PD_VENC1, PD_RKVDEC0, PD_RKVDEC1, PD_VPU,
                PD_RGA30, PD_AV1, PD_VI, PD_FEC, PD_ISP1, PD_RGA31, PD_VOP, PD_VO0, PD_VO1, PD_AUDIO, PD_PHP, PD_GMAC, PD_PCIE,
@@ -130,15 +126,6 @@ BIU_LIST = [BIU_GPU, BIU_NPUTOP, BIU_NPU1, BIU_NPU2, BIU_VENC0, BIU_VENC1, BIU_R
 PD_MEM_LIST = [None, None, None, PD_NPUTOP, PD_NPU1, PD_NPU2, PD_VENC0, PD_VENC1, PD_RKVDEC0, PD_RKVDEC1, None,
                PD_RGA30, PD_AV1, PD_VI, PD_FEC, PD_ISP1, PD_RGA31, PD_VOP, PD_VO0, PD_VO1, PD_AUDIO, PD_PHP, PD_GMAC, PD_PCIE, None,
                PD_NVM0, PD_SDIO, PD_USB, None, PD_SDMMC, PD_CRYPTO, PD_CENTER, PD_DDR01, PD_DDR23]
-
-
-def iterlistchunks(arr, size):
-    count = int(len(arr) / size)
-    left = len(arr) % size
-    for i in range(count):
-        yield arr[i * size: (i + 1) * size]
-    if left:
-        yield arr[(i + 1) * size:]
 
 
 class PMU(Device):
@@ -165,18 +152,18 @@ class PMU(Device):
 
         offset = 0x8100
         for regname in ["BIU_IDLE_REQUEST_HARD_CON", "BIU_IDLE_REQUEST_SOFT_CON"]:
-            for i, domainlist in enumerate(iterlistchunks(BIU_LIST, 16)):
+            for i, domainlist in enumerate(common.iterlistchunks(BIU_LIST, 16)):
                 _regname = f"{regname}{i}"
                 reg = RK_Reg32_16bitMasked(_regname, offset)
                 for j, domain in enumerate(domainlist):
-                    reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, DISABLED, ENABLED)))
+                    reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, common.DISABLED, common.ENABLED)))
                 self.block(reg)
                 self.addgroup(regname, _regname)
                 offset += 4
 
         offset = 0x8118
         regname = "BIU_IDLE_ACK_STATUS"
-        for i, domainlist in enumerate(iterlistchunks(BIU_LIST, 32)):
+        for i, domainlist in enumerate(common.iterlistchunks(BIU_LIST, 32)):
             _regname = f"{regname}{i}"
             reg = Reg32(_regname, offset)
             reg.allowwrite = False
@@ -188,7 +175,7 @@ class PMU(Device):
 
         offset = 0x8120
         regname = "BIU_IDLE_STATUS"
-        for i, domainlist in enumerate(iterlistchunks(BIU_LIST, 32)):
+        for i, domainlist in enumerate(common.iterlistchunks(BIU_LIST, 32)):
             _regname = f"{regname}{i}"
             reg = Reg32(_regname, offset)
             reg.allowwrite = False
@@ -200,44 +187,44 @@ class PMU(Device):
 
         offset = 0x8140
         for regname in ["PWR_GATE_HARD_CON", "PWR_GATE_SOFT_CON"]:
-            for i, domainlist in enumerate(iterlistchunks(GATE_LIST, 16)):
+            for i, domainlist in enumerate(common.iterlistchunks(GATE_LIST, 16)):
                 _regname = f"{regname}{i}"
                 reg = RK_Reg32_16bitMasked(_regname, offset)
                 for j, domain in enumerate(domainlist):
-                    reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, ON, OFF)))
+                    reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, common.ON, common.OFF)))
                 self.block(reg)
                 self.addgroup(regname, _regname)
                 offset += 4
 
         regname = "PWR_GATE_STATUS"
         offset = 0x8180
-        for i, domainlist in enumerate(iterlistchunks(GATE_LIST, 32)):
+        for i, domainlist in enumerate(common.iterlistchunks(GATE_LIST, 32)):
             _regname = f"{regname}{i}"
             reg = Reg32(_regname, offset)
             reg.allowwrite = False
             for j, domain in enumerate(domainlist):
-                reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, ON, OFF)))
+                reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, common.ON, common.OFF)))
             self.block(reg)
             self.addgroup(regname, _regname)
             offset += 4
 
         offset = 0x81A0
         regname = "PWR_GATE_MEM_SOFT_CON"
-        for i, domainlist in enumerate(iterlistchunks(PD_MEM_LIST, 16)):
+        for i, domainlist in enumerate(common.iterlistchunks(PD_MEM_LIST, 16)):
             _regname = f"{regname}{i}"
             reg = RK_Reg32_16bitMasked(_regname, offset)
             for j, domain in enumerate(domainlist):
                 if domain is None:
                     continue
-                reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, DISABLED, ENABLED)))
+                reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, common.DISABLED, common.ENABLED)))
             self.block(reg)
             self.addgroup(regname, _regname)
             offset += 4
 
         regname = "REPAIR_STATUS"
         offset = 0x8280
-        for prefix, validmap in {"PGDONE": ["NOTCOMPLETE", "COMPLETE"], "CED": ["READY", "BUSY"], "POWER": [OFF, ON]}.items():
-            for i, domainlist in enumerate(iterlistchunks(STATUS_LIST, 32)):
+        for prefix, validmap in {"PGDONE": ["NOTCOMPLETE", "COMPLETE"], "CED": ["READY", "BUSY"], "POWER": [common.OFF, common.ON]}.items():
+            for i, domainlist in enumerate(common.iterlistchunks(STATUS_LIST, 32)):
                 _regname = f"{regname}_{prefix}{i}"
                 reg = Reg32(_regname, offset)
                 reg.allowwrite = False

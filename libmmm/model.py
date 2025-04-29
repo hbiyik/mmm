@@ -15,6 +15,7 @@ class Device:
         self.__blocks = []
         self.__io = None
         self.groups = {}
+        self.iotype = None
 
     def addgroup(self, groupname, blockname):
         block = self.getblock(blockname)
@@ -46,12 +47,14 @@ class Device:
                          self.name, self.start, hex(self.start),
                          self.start + self.size, hex(self.start + self.size))
             self.__io.close()
+            self.iotype = None
             self.__io = None
         else:
             logger.debug("Device: %s, Binding IO to [%d (%s), %d (%s)]",
                          self.name, self.start, hex(self.start),
                          self.start + self.size, hex(self.start + self.size))
-            self.__io = io(self.start, self.size)
+            self.iotype = io
+            self.__io = self.iotype(self.start, self.size)
 
     def getblock(self, name):
         for block in self.__blocks:

@@ -38,9 +38,7 @@ class Memory(Io):
 
     def readio(self, start, size):
         self.mmap.seek(self.startoffset + start)
-        val = b""
-        for _ in range(size):
-            val += self.mmap.read(1)
+        val = self.mmap.read(size)
         logger.debug("%s read start: %s, size: %d, val: 0x%s", self.dev, hex(self.start + self.startoffset + start), size, binascii.hexlify(val).decode())
         return val
 

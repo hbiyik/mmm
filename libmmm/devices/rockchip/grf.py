@@ -17,11 +17,12 @@
 
 from libmmm.model import Device, Reg32, Datapoint, Validator, VirtualDatapoint
 from libmmm.devices.rockchip import RK_Reg32_16bitMasked
+from libmmm import common
 
 
 class PvtPllClock(VirtualDatapoint):
-    def __init__(self, reg, con, name="pvtpll_clock", clkin=24):
-        VirtualDatapoint.__init__(self, name, unit="Mhz")
+    def __init__(self, reg, con, name=common.PVTCLOCKNAME, clkin=24):
+        VirtualDatapoint.__init__(self, name, unit=common.MHZ)
         self.reg = reg
         self.con = con
         self.clkin = clkin
