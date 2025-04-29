@@ -17,35 +17,47 @@ class BIGCORE_GRF(Device):
         PVTPLL_CON1 = Reg32("PVTPLL_CON1", 0x8)
         PVTPLL_CON2 = Reg32("PVTPLL_CON2", 0xC)
         PVTPLL_CON3 = Reg32("PVTPLL_CON3", 0x10)
+        PVTPLL_STATUS0 = Reg32("PVTPLL_STATUS0", 0x14)
+        PVTPLL_STATUS1 = Reg32("PVTPLL_STATUS1", 0x18)
 
         self.block(PVTPLL_CON0_L)
         PVTPLL_CON0_L.register(0, 1, Datapoint("START", default=0, validity=Validator(0, 1)))
         PVTPLL_CON0_L.register(1, 1, Datapoint("OSC_EN", default=0, validity=Validator(0, 1)))
         PVTPLL_CON0_L.register(2, 1, Datapoint("OUT_POLAR", default=0, validity=Validator(0, 1, "ACTIVE_LOW", "ACTIVE_HIGH")))
         PVTPLL_CON0_L.register(3, 5, Datapoint("reserved", default=0, validity=Validator(0, 1)))
-        PVTPLL_CON0_L.register(8, 3, Datapoint("OSC_RING_SEL", default=0, validity=Validator(0, 2**3)))
-        PVTPLL_CON0_L.register(11, 2, Datapoint("CLK_DIV_REF", default=0, validity=Validator(0, 4)))
-        PVTPLL_CON0_L.register(13, 2, Datapoint("CLK_DIV_OSC", default=0, validity=Validator(0, 4)))
+        PVTPLL_CON0_L.register(8, 3, Datapoint("OSC_RING_SEL", default=0, validity=Validator(0, 2 ** 3 - 1)))
+        PVTPLL_CON0_L.register(11, 2, Datapoint("CLK_DIV_REF", default=0, validity=Validator(0, 2 ** 2 - 1)))
+        PVTPLL_CON0_L.register(13, 2, Datapoint("CLK_DIV_OSC", default=0, validity=Validator(0, 2 ** 2 - 1)))
         PVTPLL_CON0_L.register(15, 1, Datapoint("BYPASS", default=0, validity=Validator(0, 1)))
 
         self.block(PVTPLL_CON0_H)
-        PVTPLL_CON0_H.register(0, 6, Datapoint("RING_LENGTH_SEL", default=0, validity=Validator(0, 2**6)))
-        PVTPLL_CON0_H.register(6, 10, Datapoint("reserved", default=0, validity=Validator(0, 2**10)))
+        PVTPLL_CON0_H.register(0, 6, Datapoint("RING_LENGTH_SEL", default=0, validity=Validator(0, 2 ** 6 - 1)))
+        PVTPLL_CON0_H.register(6, 10, Datapoint("reserved", default=0, validity=Validator(0, 2 ** 10 - 1)))
 
         self.block(PVTPLL_CON1)
-        PVTPLL_CON1.register(0, 32, Datapoint("CAL_CNT", default=0x18, validity=Validator(0, 2**32)))
+        PVTPLL_CON1.register(0, 32, Datapoint("CAL_CNT", default=0x18, validity=Validator(0, 2 ** 32 - 1)))
 
         self.block(PVTPLL_CON2)
-        PVTPLL_CON2.register(0, 16, Datapoint("THRESHOLD", default=0x0, validity=Validator(0, 2**16)))
-        PVTPLL_CON2.register(16, 16, Datapoint("CKG_CNT", default=0x4, validity=Validator(0, 2**16)))
+        PVTPLL_CON2.register(0, 16, Datapoint("THRESHOLD", default=0x0, validity=Validator(0, 2 ** 16 - 1)))
+        PVTPLL_CON2.register(16, 16, Datapoint("CKG_VAL", default=0x4, validity=Validator(0, 2 ** 16 - 1)))
 
         self.block(PVTPLL_CON3)
-        PVTPLL_CON3.register(0, 32, Datapoint("REF_CNT", default=0x18, validity=Validator(0, 2**32)))
+        PVTPLL_CON3.register(0, 32, Datapoint("REF_CNT", default=0x18, validity=Validator(0, 2 ** 32 - 1)))
+
+        self.block(PVTPLL_STATUS0)
+        PVTPLL_STATUS0.register(0, 32, Datapoint("OSC_CNT", default=0x0, validity=Validator(0, 2 ** 32 - 1)))
+        PVTPLL_STATUS0.allowwrite = False
+        self.block(PVTPLL_STATUS1)
+        PVTPLL_STATUS1.register(0, 32, Datapoint("OSC_CNT_AVG", default=0x0, validity=Validator(0, 2 ** 32 - 1)))
+        PVTPLL_STATUS1.allowwrite = False
+
         self.addgroup("PVTPLL_CON", "PVTPLL_CON0_L")
         self.addgroup("PVTPLL_CON", "PVTPLL_CON0_H")
         self.addgroup("PVTPLL_CON", "PVTPLL_CON1")
         self.addgroup("PVTPLL_CON", "PVTPLL_CON2")
         self.addgroup("PVTPLL_CON", "PVTPLL_CON3")
+        self.addgroup("PVTPLL_STATUS", "PVTPLL_STATUS0")
+        self.addgroup("PVTPLL_STATUS", "PVTPLL_STATUS1")
 
     def memcfg1(self, name, offset):
         MEM_CFG = RK_Reg32_16bitMasked(name, offset)
