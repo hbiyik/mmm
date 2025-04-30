@@ -6,8 +6,40 @@ Created on Nov 4, 2022
 import os
 import mmap
 import binascii
-from libmmm.model import Io
 from libmmm.helper import logger
+
+
+class Io:
+    def __init__(self, start, size, dev="/dev/mem", pagesize=4096, read=True, write=True):
+        self.flag_r = read
+        self.flag_w = write
+        self.dev = dev
+        self.pagesize = pagesize
+        self.start = start
+        self.size = size
+        self.isinited = False
+
+    def init(self):
+        self.isinited = True
+
+    def read(self, start, size):
+        if not self.isinited:
+            self.init()
+        return self.readio(start, size)
+
+    def write(self, start, data):
+        if not self.isinited:
+            self.init()
+        return self.writeio(start, data)
+
+    def close(self):
+        pass
+
+    def writeio(self, start, size, data):
+        raise NotImplementedError
+
+    def readio(self, start, size):
+        raise NotImplementedError
 
 
 class Memory(Io):

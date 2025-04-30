@@ -23,6 +23,11 @@ ON = "ON"
 OFF = "OFF"
 ENABLED = "ENABLED"
 DISABLED = "DISABLED"
+COMPLETE = "COMPLETE"
+NOTCOMPLETE = "NOTCOMPLETE"
+READY = "READY"
+BUSY = "BUSY"
+IDLE = "IDLE"
 
 
 def iterlistchunks(arr, size):
@@ -32,3 +37,12 @@ def iterlistchunks(arr, size):
         yield arr[i * size: (i + 1) * size]
     if left:
         yield arr[(i + 1) * size:]
+
+
+class Singleton(type):
+    instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls.instances:
+            cls.instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls.instances[cls]

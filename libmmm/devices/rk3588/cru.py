@@ -7,7 +7,7 @@ Created on Mar 19, 2023
 from libmmm import common
 from libmmm.model import Device, Datapoint, Validator, VirtualDatapoint
 from libmmm.devices.rockchip import RK_Reg32_16bitMasked
-from libmmm.devices.rk3528.grf import GPU_GRF
+from libmmm.devices.rk3588.grf import GPU_GRF
 
 
 MUX = "MUX"
@@ -95,15 +95,11 @@ class ClkSel(VirtualDatapoint):
                        MUX: MUX}
 
     def getpvtpll(self):
-        return 0
-        # TO-DO: clean this up
         if not self.pvtdev:
             return -5
         pdev = self.pvtdev()
-        pdev.io = self.cru.iotype
         reg = pdev.getblock(self.pvtregname)
         val = int(reg.get(self.pvtname).value)
-        pdev.io = None
         return val
 
     def getmux(self):
@@ -185,9 +181,52 @@ class IntPLL(VirtualDatapoint):
         pass
 
 
+class BatchClockGate(VirtualDatapoint):
+    def __init__(self, name, regs, points):
+        VirtualDatapoint.__init__(self, name, validity=Validator(0, 1, common.OFF, common.ON))
+        self.regs = regs
+        self.points = points
+        self.allowwrite = True
+
+    def getreg(self, point):
+        for reg in self.regs:
+            dp = reg.get(point)
+            if dp:
+                return reg, dp
+
+    def get(self):
+        for point in self.points:
+            _reg, dp = self.getreg(point)
+            if not dp:
+                return 0
+            if dp.value == common.OFF:
+                return 0
+        return 1
+
+    def set(self, value):
+        value = [common.OFF, common.ON][value]
+        for point in self.points:
+            reg, dp = self.getreg(point)
+            if not dp:
+                continue
+            if not dp.value == value:
+                reg.write(dp.name, value)
+
+
 class CRU(Device):
     devname = "CRU"
     start = 0xFD7C0000
+
+    def __init__(self, start=None):
+        start = start or self.start
+        super(CRU, self).__init__(self.devname, start)
+
+        self.reg_v0pll = self.fracpll_con(0x160, V0PLL)
+        self.reg_aupll = self.fracpll_con(0x180, AUPLL)
+        self.reg_cpll = self.fracpll_con(0x1a0, CPLL)
+        self.reg_gpll = self.fracpll_con(0x1c0, GPLL)
+        self.reg_npll = self.intpll_con(0x1e0, NPLL)
+        self.gpu()
 
     def regfromoffset(self, offset, base=0x300, prefix="CLKSEL_"):
         regnum = int((offset - base) / 4)
@@ -221,7 +260,8 @@ class CRU(Device):
                                                divreg=CLKSEL_REG,
                                                selname=f"{nametest}_sel",
                                                muxname=f"{name}_mux",
-                                               divname=f"{nametest}_div"
+                                               divname=f"{nametest}_div",
+                                               pvtdev=GPU_GRF, pvtregname="PVTPLL_STATUS1",
                                                ))
         return CLKSEL_REG
 
@@ -260,16 +300,23 @@ class CRU(Device):
         self.addgroup(gname, reg.name)
 
         offset = 0x908
-        for clk_names in common.iterlistchunks([None, clk_gpu_mux, clk_testout_gpu, clk_gpu_src,
-                                                clk_gpu, None, clk_gpu_coregroup, clk_gpu_stacks,
-                                                aclk_s_gpu_biu, aclk_m0_gpu_biu, aclk_m1_gpu_biu,
-                                                aclk_m2_gpu_biu, aclk_m3_gpu_biu, pclk_gpu_root,
-                                                pclk_gpu_biu, pclk_pvtm2, clk_pvtm2, clk_gpu_pvtm,
-                                                pclk_gpu_grf, clk_gpu_pvtpll], 16):
+        gpu_clocks = [None, clk_gpu_mux, clk_testout_gpu, clk_gpu_src,
+                      clk_gpu, None, clk_gpu_coregroup, clk_gpu_stacks,
+                      aclk_s_gpu_biu, aclk_m0_gpu_biu, aclk_m1_gpu_biu,
+                      aclk_m2_gpu_biu, aclk_m3_gpu_biu, pclk_gpu_root,
+                      pclk_gpu_biu, pclk_pvtm2, clk_pvtm2, clk_gpu_pvtm,
+                      pclk_gpu_grf, clk_gpu_pvtpll]
+
+        gateregs = []
+        for clk_names in common.iterlistchunks(gpu_clocks, 16):
             reg = self.clkgate(offset, *clk_names)
+            gateregs.append(reg)
             self.block(reg)
             self.addgroup(gname, reg.name)
             offset += 4
+
+        gateregs[0].register(None, None, BatchClockGate("clk_gpu_all", gateregs,
+                                                        [x for x in gpu_clocks if x is not None]))
 
     def clkgate(self, offset, *clk_names):
         reg = self.regfromoffset(offset, base=0x800, prefix="CLKGATE_")
@@ -386,17 +433,6 @@ class CRU(Device):
         PLL_CON6.register(15, 1, Datapoint("lock", default=0, validity=Validator(0, 1)))
 
         return PLL_CON0
-
-    def __init__(self, start=None):
-        start = start or self.start
-        super(CRU, self).__init__(self.devname, start)
-
-        self.reg_v0pll = self.fracpll_con(0x160, V0PLL)
-        self.reg_aupll = self.fracpll_con(0x180, AUPLL)
-        self.reg_cpll = self.fracpll_con(0x1a0, CPLL)
-        self.reg_gpll = self.fracpll_con(0x1c0, GPLL)
-        self.reg_npll = self.intpll_con(0x1e0, NPLL)
-        self.gpu()
 
 
 class SBUSCRU(CRU):

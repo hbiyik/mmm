@@ -4,18 +4,26 @@ Created on Nov 4, 2022
 @author: boogie
 '''
 from libmmm.helper import logger
+from libmmm import common
+from libmmm.io import Memory
 import struct
 
 
-class Device:
-    def __init__(self, name, start):
+class Device(metaclass=common.Singleton):
+    @staticmethod
+    def closeall():
+        for cls, ins in common.Singleton.instances.items():
+            if isinstance(ins, Device):
+                ins.close()
+
+    def __init__(self, name, start, io=None):
         self.name = name
         self.start = start
         self.size = 0
-        self.__blocks = []
+        self.iotype = io or Memory
         self.__io = None
+        self.__blocks = []
         self.groups = {}
-        self.iotype = None
 
     def addgroup(self, groupname, blockname):
         block = self.getblock(blockname)
@@ -38,23 +46,12 @@ class Device:
 
     @property
     def io(self):
-        return self.__io
-
-    @io.setter
-    def io(self, io):
-        if io is None and self.__io:
-            logger.debug("Device: %s, Uninding IO to [%d (%s), %d (%s)]",
-                         self.name, self.start, hex(self.start),
-                         self.start + self.size, hex(self.start + self.size))
-            self.__io.close()
-            self.iotype = None
-            self.__io = None
-        else:
+        if not self.__io and self.iotype:
             logger.debug("Device: %s, Binding IO to [%d (%s), %d (%s)]",
                          self.name, self.start, hex(self.start),
                          self.start + self.size, hex(self.start + self.size))
-            self.iotype = io
             self.__io = self.iotype(self.start, self.size)
+        return self.__io
 
     def getblock(self, name):
         for block in self.__blocks:
@@ -72,6 +69,13 @@ class Device:
     def __iter__(self):
         for block in self.__blocks:
             yield block
+
+    def close(self):
+        if self.__io:
+            logger.debug("Device: %s, Unbinding IO to [%d (%s), %d (%s)]",
+                         self.name, self.start, hex(self.start),
+                         self.start + self.size, hex(self.start + self.size))
+            self.__io.close()
 
 
 class Block:
@@ -93,6 +97,44 @@ class Block:
         yield Datapoint("block", self.read())
 
 
+class VirtualReg(Block):
+    def __init__(self, name):
+        self.device = None
+        self.name = name
+        self.start = 0
+        self.size = 0
+        self.__datapoints = []
+        self.allowread = True
+        self.allowwrite = False
+
+    def read(self):
+        pass
+
+    def write(self, name, value):
+        dp = self.get(name)
+        if dp is None:
+            raise IndexError(f"Datapoint {name} doesn't exist in register {self.name}")
+        if not dp.allowwrite:
+            raise RuntimeError("Read only datapoint, writing is not supported")
+        dp.value = value
+
+    def register(self, datapoint):
+        if not self.allowwrite:
+            datapoint.allowwrite = self.allowwrite
+        if not self.allowread:
+            datapoint.allowread = self.allowread
+        self.__datapoints.append(datapoint)
+
+    def __iter__(self):
+        for dp in self.__datapoints:
+            yield dp
+
+    def get(self, name):
+        for dp in self:
+            if dp.name == name:
+                return dp
+
+
 class Reg32(Block):
     def __init__(self, name, start):
         super(Reg32, self).__init__(name, start, 4)
@@ -107,6 +149,10 @@ class Reg32(Block):
         return ((2 ** size) - 1)
 
     def register(self, start, size, datapoint):
+        if not self.allowwrite:
+            datapoint.allowwrite = self.allowwrite
+        if not self.allowread:
+            datapoint.allowread = self.allowread
         self.__regs.append((start, size, datapoint))
 
     def readraw(self):
@@ -123,7 +169,7 @@ class Reg32(Block):
             value = (buffer >> (start)) & self._maxnbit(size)
             logger.debug("Reg32: reading %s bit value=%d from register %s start=%d, length=%d, data=%s",
                          datapoint.name, value, self.name, start, size, bin(buffer))
-            datapoint.value = value
+            datapoint.int = value
         return list(self)
 
     def _setbit(self, data32bit, start, size, value):
@@ -133,11 +179,8 @@ class Reg32(Block):
         newval = (data32bit | (value << start)) & self.maxbits
         return struct.pack("%sI" % self.endian, newval)
 
-    def _checkvalidity(self, datapoint, value):
-        if datapoint.validity and datapoint.validity.checkvalue(value):
-            return datapoint.validity.getraw(value)
-        else:
-            return int(value)
+    def writedatapoint(self, oldval, start, size, value):
+        super(Reg32, self).write(self._setbit(oldval, start, size, value))
 
     def write(self, name, value):
         if not self.allowwrite:
@@ -145,8 +188,12 @@ class Reg32(Block):
         oldval = self.readraw()
         for start, size, datapoint in self.iterdatapoints():
             if datapoint.name == name:
-                value = self._checkvalidity(datapoint, value)
-                super(Reg32, self).write(self._setbit(oldval, start, size, value))
+                if not datapoint.allowwrite:
+                    raise RuntimeError("Read only datapoint, writing is not supported")
+                datapoint.value = value
+                if isinstance(datapoint, VirtualDatapoint):
+                    return True
+                self.writedatapoint(oldval, start, size, datapoint.int)
                 return True
 
     def iterdatapoints(self):
@@ -168,25 +215,44 @@ class Datapoint:
         self.name = name
         self.validity = validity
         self.unit = unit
-        self.__value = value
+        self.__int = value
         self.__default = default
+        self.allowwrite = True
+        self.allowread = True
+
+    @property
+    def int(self):
+        return self.__int
 
     @property
     def value(self):
-        if self.validity and self.validity.checkraw(self.__value):
-            return self.validity.getvalue(self.__value)
-        return self.__value
+        if self.validity:
+            return self.validity.getvalue(self.int)
+        return self.int
+
+    @int.setter
+    def int(self, intval):
+        if self.name == "clk_gpu_all":
+            pass
+        if self.validity and self.validity.checkint(intval):
+            self.__int = intval
+        elif isinstance(intval, int):
+            self.__int = intval
+        else:
+            raise ValueError(f"Datapoint {self.name} value {intval} is not accepted")
 
     @value.setter
     def value(self, value):
-        if self.validity and self.validity.checkraw(value):
-            self.__value = value
+        if self.name == "clk_gpu_all":
+            pass
+        if self.validity and self.validity.checkvalue(value):
+            self.int = self.validity.getint(value)
         else:
-            self.__value = value
+            self.int = int(value)
 
     @property
     def default(self):
-        if self.__default is not None and self.validity and self.validity.checkraw(self.__default):
+        if self.__default is not None and self.validity and self.validity.checkint(self.__default):
             return self.validity.getvalue(self.__default)
         return self.__default
 
@@ -202,54 +268,23 @@ class Datapoint:
 
 
 class VirtualDatapoint(Datapoint):
-    def __init__(self, name, validity=None, unit=None, default=None):
-        Datapoint.__init__(self, name, None, validity, unit, default)
+    def __init__(self, name, value=None, validity=None, unit=None, default=None):
+        Datapoint.__init__(self, name, value, validity, unit, default)
+        self.allowwrite = False
 
     @property
-    def value(self):
+    def int(self):
         return self.get()
 
-    @value.setter
-    def value(self, value):
-        self.set(value)
+    @int.setter
+    def int(self, intval):
+        super(VirtualDatapoint, type(self)).int.fset(self, intval)
+        self.set(super().int)
 
-    def get(self, register):
+    def get(self):
         raise NotImplementedError
 
-    def set(self, register):
-        raise NotImplementedError
-
-
-class Io:
-    def __init__(self, start, size, dev="/dev/mem", pagesize=4096, read=True, write=True):
-        self.flag_r = read
-        self.flag_w = write
-        self.dev = dev
-        self.pagesize = pagesize
-        self.start = start
-        self.size = size
-        self.isinited = False
-
-    def init(self):
-        self.isinited = True
-
-    def read(self, start, size):
-        if not self.isinited:
-            self.init()
-        return self.readio(start, size)
-
-    def write(self, start, data):
-        if not self.isinited:
-            self.init()
-        return self.writeio(start, data)
-
-    def close(self):
-        pass
-
-    def writeio(self, start, size, data):
-        raise NotImplementedError
-
-    def readio(self, start, size):
+    def set(self, value):
         raise NotImplementedError
 
 
@@ -259,34 +294,35 @@ class Validator:
         self.intto = intto
         self.valuemap = [str(x).upper() for x in valuemap]
 
-    def checkraw(self, value):
+    def checkint(self, intval):
         if self.intfrom and self.intto:
-            if value > self.intfrom or value < self.intfrom:
+            if intval > self.intfrom or intval < self.intfrom:
                 raise ValueError("%s <= %s <= %s value not in range" % (self.intfrom,
-                                                                        value,
+                                                                        intval,
                                                                         self.valuefrom))
         return True
 
-    def checkvalue(self, value):
+    def checkvalue(self, mapped):
         if self.valuemap:
-            value = str(value).upper()
-            if value not in self.valuemap:
-                raise ValueError("%s value not in %s" % (value, self.help()))
-        else:
-            return self.checkraw(value)
-        return True
+            mapped = str(mapped).upper()
+            if mapped not in self.valuemap:
+                raise ValueError("%s value not in %s" % (mapped, self.help()))
+        return self.checkint(self.getint(mapped))
 
-    def getraw(self, value):
+    def getint(self, mapped):
         if self.valuemap:
-            return self.valuemap.index(str(value).upper()) + self.intfrom
+            return self.valuemap.index(str(mapped).upper()) + self.intfrom
         else:
-            return int(value)
+            return int(mapped)
 
-    def getvalue(self, rawvalue):
+    def getvalue(self, intval):
         if self.valuemap:
-            return self.valuemap[self.intfrom + rawvalue]
+            try:
+                return self.valuemap[self.intfrom + intval]
+            except TypeError:
+                raise TypeError
         else:
-            return rawvalue
+            return intval
 
     def help(self):
         if self.valuemap:

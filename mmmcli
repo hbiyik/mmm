@@ -4,7 +4,7 @@ Created on Nov 1, 2022
 
 @author: boogie
 '''
-from libmmm.io import Memory
+from libmmm.model import Device
 from libmmm import devices
 import argparse
 
@@ -38,7 +38,7 @@ arg_set.add_argument("value", help="value to be set")
 args = parser.parse_args()
 
 
-def iterfilter(io=None, read=False):
+def iterfilter(read=False):
     for catalog, catalogs in devices.catalogs.items():
         if args.catalog is None or catalog == args.catalog:
             for device in catalogs:
@@ -47,15 +47,10 @@ def iterfilter(io=None, read=False):
                     for block in device:
                         if args.register is None or block.name == args.register:
                             if read:
-                                # attach the io only when needed so we wont mmap for no reason
-                                if io and not device.io:
-                                    device.io = io
                                 block.read()
                             for point in block:
                                 if args.point is None or point.name == args.point:
                                     yield catalog, device, block, point
-                        if device.io:
-                            device.io = None
 
 
 if args.command == "list":
@@ -65,13 +60,14 @@ if args.command == "list":
                                            block.name,
                                            point.name))
 elif args.command == "get":
-    for cat, device, block, point in iterfilter(Memory, True):
+    for cat, device, block, point in iterfilter(True):
         print("-c %s -d %s -r %s -p %s" % (cat,
                                            device.name,
                                            block.name,
                                            point))
 
 elif args.command == "set":
-    for cat, device, block, point in iterfilter(Memory):
-        device.io = Memory
+    for cat, device, block, point in iterfilter():
         block.write(point.name, args.value)
+
+Device.closeall()

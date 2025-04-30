@@ -9,7 +9,7 @@ import curses
 import curses.textpad
 
 from libmmm import devices
-from libmmm import io
+from libmmm.model import Device
 
 LEVEL_CATALOG = 0
 LEVEL_DEVICE = 1
@@ -71,23 +71,34 @@ class Screen:
                 headers.append(f"validity={datapoint.validity.help()}")
         self.headers[1] += headers
 
+    def on_exit(self):
+        Device.closeall()
+
     def on_display(self, optname, opt):
         val = optname
+        read = True
+        write = True
         if self.level == LEVEL_POINT:
             register = opt
             register.read()
             datapoint = register.get(optname.split(".")[1])
+            if not datapoint.allowwrite:
+                write = False
             val = f"{optname} = {datapoint.value}"
             if datapoint.unit:
                 val += f" {datapoint.unit}"
         if optname == self.getoptkey():
             self.updateheader()
-        return val
+        return val, read, write
 
     def on_edit(self):
         optname = self.getoptkey()
         register = self.getopt()
+        if not register.allowwrite:
+            return
         datapoint = register.get(optname.split(".")[1])
+        if not datapoint.allowwrite:
+            return
         curses.echo()
         row = self.current - self.top + len(self.headers)
         col = len(optname) + 3
@@ -120,8 +131,6 @@ class Screen:
             self.init(options, LEVEL_DEVICE)
         elif self.level == LEVEL_DEVICE:
             device = self.getopt()
-            if not device.io:
-                device.io = io.Memory
             self.init(dict(device.itergroups()), LEVEL_REGISTER)
         elif self.level == LEVEL_REGISTER:
             for register in self.getopt():
@@ -162,10 +171,15 @@ class Screen:
         curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_RED)
         curses.init_pair(3, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_WHITE)
+        curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_BLACK)
 
-        self.window.bkgd(' ', curses.color_pair(3) | curses.A_BOLD)
+        self.color_item = curses.color_pair(1)
+        self.color_select = curses.color_pair(2)
+        self.color_background = curses.color_pair(3)
+        self.color_header = curses.color_pair(4)
+        self.color_item_readonly = curses.color_pair(4)
 
-        self.current = curses.color_pair(2)
+        self.window.bkgd(' ', self.color_background | curses.A_BOLD)
 
         self.height, self.width = self.window.getmaxyx()
 
@@ -205,6 +219,7 @@ class Screen:
             elif ch == curses.ascii.ESC:
                 self.msg = None
                 if not self.prevs:
+                    self.on_exit()
                     break
                 self.back()
 
@@ -245,15 +260,17 @@ class Screen:
             if index < self.top or index >= self.top + self.max_lines:
                 continue
             row = index - self.top
-            val = self.on_display(optname, opt)
+            val, _read, write = self.on_display(optname, opt)
             if row == self.current:
-                self.window.addstr(row + len(self.headers), 0, val, curses.color_pair(2))
+                self.window.addstr(row + len(self.headers), 0, val, self.color_select)
+            elif not write:
+                self.window.addstr(row + len(self.headers), 0, val, self.color_item_readonly)
             else:
-                self.window.addstr(row + len(self.headers), 0, val, curses.color_pair(1))
+                self.window.addstr(row + len(self.headers), 0, val, self.color_item)
             row += 1
         if self.msg:
             self.headers[1].append(self.msg)
         self.headers[1] = " ".join(self.headers[1])
         for row, header in enumerate(self.headers):
-            self.window.addstr(row, 0, header + " " * (self.width - len(header)), curses.color_pair(4))
+            self.window.addstr(row, 0, header + " " * (self.width - len(header)), self.color_header)
         self.window.refresh()

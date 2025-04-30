@@ -3,7 +3,7 @@ Created on Apr 6, 2023
 
 @author: z0042jww
 '''
-from libmmm.model import Device, Datapoint, Validator, Reg32
+from libmmm.model import Device, Datapoint, Validator, Reg32, VirtualDatapoint, VirtualReg
 from libmmm.devices.rockchip import RK_Reg32_16bitMasked
 from libmmm import common
 
@@ -103,6 +103,16 @@ BIU_TOP = "BIU_TOP"
 BIU_DDRSCH2 = "BIU_DDRSCH2"
 BIU_DDRSCH3 = "BIU_DDRSCH3"
 
+PWR_GATE_STATUS = "PWR_GATE_STATUS"
+REPAIR_STATUS_PGDONE = "REPAIR_STATUS_PGDONE"
+REPAIR_STATUS_CED = "REPAIR_STATUS_CED"
+REPAIR_STATUS_POWER = "REPAIR_STATUS_POWER"
+BIU_IDLE_STATUS = "BIU_IDLE_STATUS"
+PWR_GATE_HARD_CON = "PWR_GATE_HARD_CON"
+PWR_GATE_SOFT_CON = "PWR_GATE_SOFT_CON"
+BIU_IDLE_REQUEST_HARD_CON = "BIU_IDLE_REQUEST_HARD_CON"
+BIU_IDLE_REQUEST_SOFT_CON = "BIU_IDLE_REQUEST_SOFT_CON"
+
 
 STATUS_LIST = [PD_PMU1, VD_GPU, PD_NPUTOP, PD_NPU1, PD_NPU2, PD_VENC0, PD_VENC1, PD_RKVDEC0, PD_RKVDEC1, PD_VPU,
                PD_RGA30, PD_AV1, PD_VI, PD_FEC, PD_ISP1, PD_RGA31, PD_VOP, PD_VO0, PD_VO1, PD_AUDIO, PD_PHP, PD_GMAC, PD_PCIE,
@@ -128,6 +138,51 @@ PD_MEM_LIST = [None, None, None, PD_NPUTOP, PD_NPU1, PD_NPU2, PD_VENC0, PD_VENC1
                PD_NVM0, PD_SDIO, PD_USB, None, PD_SDMMC, PD_CRYPTO, PD_CENTER, PD_DDR01, PD_DDR23]
 
 
+class PowerDomain(VirtualDatapoint):
+    def __init__(self, pmu, domain, biu):
+        VirtualDatapoint.__init__(self, domain,
+                                  validity=Validator(0, 1, common.OFF, common.ON))
+        self.pmu = pmu
+        self.biu = biu
+        self.domain = domain
+        self.allowwrite = True
+
+    def getdp(self, regname, dpname, regcount, read=True):
+        for i in range(regcount):
+            reg = self.pmu.getblock(f"{regname}{i}")
+            if not reg:
+                continue
+            dp = reg.get(dpname)
+            if dp is None:
+                continue
+            if read:
+                reg.read()
+            return reg, dp
+        return None, None
+
+    def get(self):
+        for regname, dpname, expected in ((PWR_GATE_STATUS, self.domain, common.ON),
+                                          (REPAIR_STATUS_POWER, self.domain, common.ON),
+                                          (BIU_IDLE_STATUS, self.biu, common.BUSY)):
+            _reg, dp = self.getdp(regname, dpname, 2)
+            if dp is None:
+                return 0
+            if not dp.value == expected:
+                return 0
+        return 1
+
+    def set(self, index):
+        # TODO: check if PMU is on hardware or software here
+        for regname, dpname, setval in ((PWR_GATE_SOFT_CON, self.domain, (common.OFF, common.ON)),
+                                        (BIU_IDLE_REQUEST_SOFT_CON, self.biu, (common.ENABLED, common.DISABLED))):
+            value = setval[index]
+            reg, dp = self.getdp(regname, dpname, 2)
+            if dp is None:
+                raise IndexError(f"{regname} dosn't have datapoint {dpname}")
+            if not dp.value == value:
+                reg.write(dpname, value)
+
+
 class PMU(Device):
     devname = "PMU"
     start = 0xFD8D0000
@@ -151,7 +206,7 @@ class PMU(Device):
         self.block(DSU_PWR_CON)
 
         offset = 0x8100
-        for regname in ["BIU_IDLE_REQUEST_HARD_CON", "BIU_IDLE_REQUEST_SOFT_CON"]:
+        for regname in [BIU_IDLE_REQUEST_HARD_CON, BIU_IDLE_REQUEST_SOFT_CON]:
             for i, domainlist in enumerate(common.iterlistchunks(BIU_LIST, 16)):
                 _regname = f"{regname}{i}"
                 reg = RK_Reg32_16bitMasked(_regname, offset)
@@ -174,19 +229,19 @@ class PMU(Device):
             offset += 4
 
         offset = 0x8120
-        regname = "BIU_IDLE_STATUS"
+        regname = BIU_IDLE_STATUS
         for i, domainlist in enumerate(common.iterlistchunks(BIU_LIST, 32)):
             _regname = f"{regname}{i}"
             reg = Reg32(_regname, offset)
             reg.allowwrite = False
             for j, domain in enumerate(domainlist):
-                reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, "BUSY", "IDLE")))
+                reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, common.BUSY, common.IDLE)))
             self.block(reg)
             self.addgroup(regname, _regname)
             offset += 4
 
         offset = 0x8140
-        for regname in ["PWR_GATE_HARD_CON", "PWR_GATE_SOFT_CON"]:
+        for regname in [PWR_GATE_HARD_CON, PWR_GATE_SOFT_CON]:
             for i, domainlist in enumerate(common.iterlistchunks(GATE_LIST, 16)):
                 _regname = f"{regname}{i}"
                 reg = RK_Reg32_16bitMasked(_regname, offset)
@@ -196,7 +251,7 @@ class PMU(Device):
                 self.addgroup(regname, _regname)
                 offset += 4
 
-        regname = "PWR_GATE_STATUS"
+        regname = PWR_GATE_STATUS
         offset = 0x8180
         for i, domainlist in enumerate(common.iterlistchunks(GATE_LIST, 32)):
             _regname = f"{regname}{i}"
@@ -221,15 +276,21 @@ class PMU(Device):
             self.addgroup(regname, _regname)
             offset += 4
 
-        regname = "REPAIR_STATUS"
         offset = 0x8280
-        for prefix, validmap in {"PGDONE": ["NOTCOMPLETE", "COMPLETE"], "CED": ["READY", "BUSY"], "POWER": [common.OFF, common.ON]}.items():
+        for regname, validmap in {REPAIR_STATUS_PGDONE: [common.NOTCOMPLETE, common.COMPLETE],
+                                  REPAIR_STATUS_CED: [common.READY, common.BUSY],
+                                  REPAIR_STATUS_POWER: [common.OFF, common.ON]}.items():
             for i, domainlist in enumerate(common.iterlistchunks(STATUS_LIST, 32)):
-                _regname = f"{regname}_{prefix}{i}"
+                _regname = f"{regname}{i}"
                 reg = Reg32(_regname, offset)
                 reg.allowwrite = False
                 for j, domain in enumerate(domainlist):
                     reg.register(j, 1, Datapoint(domain, default=0, validity=Validator(0, 1, *validmap)))
                 self.block(reg)
-                self.addgroup(f"{regname}_{prefix}", _regname)
+                self.addgroup(regname, _regname)
                 offset += 4
+
+        reg = VirtualReg("PV_DOMAINS")
+        reg.allowwrite = True
+        reg.register(PowerDomain(self, VD_GPU, BIU_GPU))
+        self.block(reg)
