@@ -6,16 +6,16 @@ Created on Mar 19, 2023
 from libmmm.devices.rockchip import grf
 
 
-class BIGCORE0_GRF(grf.GRF):
-    devname = "BIGCORE0_GRF"
+class GRF_BIGCORE0(grf.GRF):
+    devname = "GRF_BIGCORE0"
     start = 0xFD590000
 
 
-class BIGCORE1_GRF(grf.GRF):
-    devname = "BIGCORE1_GRF"
+class GRF_BIGCORE1(grf.GRF):
+    devname = "GRF_BIGCORE1"
     start = 0xFD592000
 
 
-class GPU_GRF(grf.GRF):
-    devname = "GPU_GRF"
+class GRF_GPU(grf.GRF):
+    devname = "GRF_GPU"
     start = 0xFD5A0000

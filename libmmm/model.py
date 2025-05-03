@@ -123,6 +123,7 @@ class VirtualReg(Block):
             datapoint.allowwrite = self.allowwrite
         if not self.allowread:
             datapoint.allowread = self.allowread
+        datapoint.reg = self
         self.__datapoints.append(datapoint)
 
     def __iter__(self):
@@ -153,6 +154,7 @@ class Reg32(Block):
             datapoint.allowwrite = self.allowwrite
         if not self.allowread:
             datapoint.allowread = self.allowread
+        datapoint.reg = self
         self.__regs.append((start, size, datapoint))
 
     def readraw(self):
@@ -219,6 +221,7 @@ class Datapoint:
         self.__default = default
         self.allowwrite = True
         self.allowread = True
+        self.reg = None
 
     @property
     def int(self):
@@ -232,8 +235,6 @@ class Datapoint:
 
     @int.setter
     def int(self, intval):
-        if self.name == "clk_gpu_all":
-            pass
         if self.validity and self.validity.checkint(intval):
             self.__int = intval
         elif isinstance(intval, int):
@@ -243,8 +244,6 @@ class Datapoint:
 
     @value.setter
     def value(self, value):
-        if self.name == "clk_gpu_all":
-            pass
         if self.validity and self.validity.checkvalue(value):
             self.int = self.validity.getint(value)
         else:

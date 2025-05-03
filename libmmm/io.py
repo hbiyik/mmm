@@ -70,8 +70,11 @@ class Memory(Io):
 
     def readio(self, start, size):
         self.mmap.seek(self.startoffset + start)
+        logger.debug("%s read start: %s, size: %d",
+                     self.dev, hex(self.start + self.startoffset + start), size)
         val = self.mmap.read(size)
-        logger.debug("%s read start: %s, size: %d, val: 0x%s", self.dev, hex(self.start + self.startoffset + start), size, binascii.hexlify(val).decode())
+        logger.debug("%s read end: %s, size: %d, val: 0x%s",
+                     self.dev, hex(self.start + self.startoffset + start), size, binascii.hexlify(val).decode())
         return val
 
     def writeio(self, start, data):

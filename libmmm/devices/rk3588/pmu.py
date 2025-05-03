@@ -41,8 +41,6 @@ PD_SDMMC = "PD_SDMMC"
 PD_CRYPTO = "PD_CRYPTO"
 PD_SECURE = "PD_SECURE"
 PD_CENTER = "PD_CENTER"
-PD_DDR01 = "PD_DDR01"
-PD_DDR23 = "PD_DDR23"
 VD_DDR01 = "VD_DDR01"
 VD_DDR23 = "VD_DDR23"
 PD_BUS = "PD_BUS"
@@ -116,7 +114,7 @@ BIU_IDLE_REQUEST_SOFT_CON = "BIU_IDLE_REQUEST_SOFT_CON"
 
 STATUS_LIST = [PD_PMU1, VD_GPU, PD_NPUTOP, PD_NPU1, PD_NPU2, PD_VENC0, PD_VENC1, PD_RKVDEC0, PD_RKVDEC1, PD_VPU,
                PD_RGA30, PD_AV1, PD_VI, PD_FEC, PD_ISP1, PD_RGA31, PD_VOP, PD_VO0, PD_VO1, PD_AUDIO, PD_PHP, PD_GMAC, PD_PCIE,
-               PD_NVM0, PD_SDIO, PD_USB, PD_SDMMC, PD_CRYPTO, PD_CENTER, PD_DDR01, PD_DDR23, PD_BUS,
+               PD_NVM0, PD_SDIO, PD_USB, PD_SDMMC, PD_CRYPTO, PD_CENTER, VD_DDR01, VD_DDR23, PD_BUS,
                PD_DSU, PD_CPU7, PD_CPU6, PD_CPU5, PD_CPU4, PD_CPU3, PD_CPU2, PD_CPU1, PD_CPU0, PD_VOPCLUSTER0, PD_VOPCLUSTER1,
                PD_VOPCLUSTER2, PD_VOPCLUSTER3, PD_VOPDSC8K, PD_VOPDSC4K, PD_VOPESMAKRT, HDMIRXPHY, PCIEPHY]
 
@@ -135,15 +133,15 @@ BIU_LIST = [BIU_GPU, BIU_NPUTOP, BIU_NPU1, BIU_NPU2, BIU_VENC0, BIU_VENC1, BIU_R
 
 PD_MEM_LIST = [None, None, None, PD_NPUTOP, PD_NPU1, PD_NPU2, PD_VENC0, PD_VENC1, PD_RKVDEC0, PD_RKVDEC1, None,
                PD_RGA30, PD_AV1, PD_VI, PD_FEC, PD_ISP1, PD_RGA31, PD_VOP, PD_VO0, PD_VO1, PD_AUDIO, PD_PHP, PD_GMAC, PD_PCIE, None,
-               PD_NVM0, PD_SDIO, PD_USB, None, PD_SDMMC, PD_CRYPTO, PD_CENTER, PD_DDR01, PD_DDR23]
+               PD_NVM0, PD_SDIO, PD_USB, None, PD_SDMMC, PD_CRYPTO, PD_CENTER, VD_DDR01, VD_DDR23]
 
 
 class PowerDomain(VirtualDatapoint):
-    def __init__(self, pmu, domain, biu):
+    def __init__(self, pmu, domain, *bius):
         VirtualDatapoint.__init__(self, domain,
                                   validity=Validator(0, 1, common.OFF, common.ON))
         self.pmu = pmu
-        self.biu = biu
+        self.bius = bius
         self.domain = domain
         self.allowwrite = True
 
@@ -161,9 +159,11 @@ class PowerDomain(VirtualDatapoint):
         return None, None
 
     def get(self):
-        for regname, dpname, expected in ((PWR_GATE_STATUS, self.domain, common.ON),
-                                          (REPAIR_STATUS_POWER, self.domain, common.ON),
-                                          (BIU_IDLE_STATUS, self.biu, common.BUSY)):
+        regmap = [(PWR_GATE_STATUS, self.domain, common.ON),
+                  (REPAIR_STATUS_POWER, self.domain, common.ON)]
+        for biu in self.bius:
+            regmap.append((BIU_IDLE_STATUS, biu, common.BUSY))
+        for regname, dpname, expected in regmap:
             _reg, dp = self.getdp(regname, dpname, 2)
             if dp is None:
                 return 0
@@ -172,11 +172,13 @@ class PowerDomain(VirtualDatapoint):
         return 1
 
     def set(self, index):
+        regmap = [(PWR_GATE_SOFT_CON, self.domain, (common.OFF, common.ON))]
+        for biu in self.bius:
+            regmap.append((BIU_IDLE_REQUEST_SOFT_CON, biu, (common.ENABLED, common.DISABLED)))
         # TODO: check if PMU is on hardware or software here
-        for regname, dpname, setval in ((PWR_GATE_SOFT_CON, self.domain, (common.OFF, common.ON)),
-                                        (BIU_IDLE_REQUEST_SOFT_CON, self.biu, (common.ENABLED, common.DISABLED))):
+        for regname, dpname, setval in regmap:
             value = setval[index]
-            reg, dp = self.getdp(regname, dpname, 2)
+            reg, dp = self.getdp(regname, dpname, 3)
             if dp is None:
                 raise IndexError(f"{regname} dosn't have datapoint {dpname}")
             if not dp.value == value:
@@ -293,4 +295,6 @@ class PMU(Device):
         reg = VirtualReg("PV_DOMAINS")
         reg.allowwrite = True
         reg.register(PowerDomain(self, VD_GPU, BIU_GPU))
+        reg.register(PowerDomain(self, VD_DDR01, BIU_DDRSCH0, BIU_DDRSCH1))
+        reg.register(PowerDomain(self, VD_DDR23, BIU_DDRSCH2, BIU_DDRSCH3))
         self.block(reg)

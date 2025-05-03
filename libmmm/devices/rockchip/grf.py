@@ -21,11 +21,18 @@ from libmmm import common
 
 
 class PvtPllClock(VirtualDatapoint):
-    def __init__(self, reg, con, name=common.PVTCLOCKNAME, clkin=24):
+    def __init__(self, block, reg, con, name=common.PVTCLOCKNAME):
         VirtualDatapoint.__init__(self, name, unit=common.MHZ)
         self.reg = reg
         self.con = con
-        self.clkin = clkin
+        self.block = block
+
+    @property
+    def clkin(self):
+        if isinstance(self.block.pvtpll_clkin, int):
+            return self.block.pvtpll_clkin
+        self.block.pvtpll_clkin.reg.read()
+        return self.block.pvtpll_clkin.int
 
     def get(self):
         self.reg.read()
@@ -36,6 +43,7 @@ class PvtPllClock(VirtualDatapoint):
 class GRF(Device):
     devname = ""
     start = 0
+    pvtpll_clkin = 24
 
     def grfcommon(self):
         PVTPLL_CON0_L = RK_Reg32_16bitMasked("PVTPLL_CON0_L", 0x0)
@@ -76,7 +84,7 @@ class GRF(Device):
         self.block(PVTPLL_STATUS1)
         PVTPLL_STATUS1.register(0, 32, Datapoint("OSC_CNT_AVG", default=0x0, validity=Validator(0, 2 ** 32 - 1)))
         PVTPLL_STATUS1.allowwrite = False
-        PVTPLL_STATUS1.register(None, None, PvtPllClock(PVTPLL_STATUS1, PVTPLL_CON1))
+        PVTPLL_STATUS1.register(None, None, PvtPllClock(self, PVTPLL_STATUS1, PVTPLL_CON1))
 
         self.addgroup("PVTPLL_CON", "PVTPLL_CON0_L")
         self.addgroup("PVTPLL_CON", "PVTPLL_CON0_H")
