@@ -8,15 +8,17 @@ from libmmm.model import Device
 
 
 class CRU(Rk3588CRU):
+    devname = "CRU"
     start = 0xff4a0000
 
     def __init__(self, start=None):
         start = start or self.start
         Device.__init__(self, self.devname, start)
 
-        self.reg_v0pll = self.fracpll_con(0x160, "V0PLL")
-        self.reg_aupll = self.fracpll_con(0x180, "AUPLL")
-        self.reg_cpll = self.fracpll_con(0x1a0, "CPLL")
-        self.reg_gpll = self.fracpll_con(0x1c0, "GPLL")
-        self.reg_npll = self.intpll_con(0x1e0, "NPLL")
-        self.clksel(0x578, "GPU")
+        clks = [None] * 16
+        clks[0] = "aclk_gpu_root"
+        clks[2] = "pclk_gpu_root"
+        clks[7] = "aclk_gpu"
+        clks[8] = "aclk_gpu_mali"
+        reg = self.clkgate(0x800 + 34 * 4, *clks)
+        self.block(reg)
