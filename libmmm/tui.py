@@ -46,11 +46,11 @@ class Screen:
         self.on_select()
 
     def getoptkey(self, offset=None):
-        offset = offset if offset is not None else self.current
+        offset = offset if offset is not None else self.current + self.top
         return list(self.options)[offset]
 
     def getopt(self, offset=None):
-        offset = offset if offset is not None else self.current
+        offset = offset if offset is not None else self.current + self.top
         return self.options[self.getoptkey(offset)]
 
     def back(self):
@@ -100,7 +100,7 @@ class Screen:
         if not datapoint.allowwrite:
             return
         curses.echo()
-        row = self.current - self.top + len(self.headers)
+        row = self.current + len(self.headers)
         col = len(optname) + 3
         self.window.nodelay(False)
         # reset previous strings

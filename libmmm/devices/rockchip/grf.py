@@ -57,7 +57,7 @@ class GRF(Device):
         self.block(PVTPLL_CON0_L)
         PVTPLL_CON0_L.register(0, 1, Datapoint("START", default=0, validity=Validator(0, 1)))
         PVTPLL_CON0_L.register(1, 1, Datapoint("OSC_EN", default=0, validity=Validator(0, 1)))
-        PVTPLL_CON0_L.register(2, 1, Datapoint("OUT_POLAR", default=0, validity=Validator(0, 1, "ACTIVE_LOW", "ACTIVE_HIGH")))
+        PVTPLL_CON0_L.register(2, 1, Datapoint("OUT_POLAR", default=0, validity=Validator(0, 1)))
         PVTPLL_CON0_L.register(3, 5, Datapoint("reserved", default=0, validity=Validator(0, 1)))
         PVTPLL_CON0_L.register(8, 3, Datapoint("OSC_RING_SEL", default=0, validity=Validator(0, 2 ** 3 - 1)))
         PVTPLL_CON0_L.register(11, 2, Datapoint("CLK_DIV_REF", default=0, validity=Validator(0, 2 ** 2 - 1)))
@@ -158,14 +158,3 @@ class GRF(Device):
         self.block(STATUS)
         STATUS.register(0, 1, Datapoint("dormantstate", default=0, validity=Validator(0, 1)))
         STATUS.register(1, 1, Datapoint("swactive", default=0, validity=Validator(0, 1)))
-
-    def __init__(self, start=None):
-        start = start or self.start
-        super(GRF, self).__init__(self.devname, start)
-        self.grfcommon()
-
-        if self.name.startswith("BIGCORE"):
-            self.bigcore_cfg()
-
-        if self.name.startswith("GPU"):
-            self.gpu_conf()

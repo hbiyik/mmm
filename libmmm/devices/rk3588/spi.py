@@ -1,0 +1,38 @@
+"""
+ Copyright (C) 2025 boogie
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
+from libmmm.devices.rockchip.spi import SPI
+
+
+class SPI0(SPI):
+    devname = "SPI0"
+    start = 0xFEB00000
+
+
+class SPI1(SPI):
+    devname = "SPI1"
+    start = 0xFEB10000
+
+
+class SPI2(SPI):
+    devname = "SPI2"
+    start = 0xFEB20000
+
+
+class SPI3(SPI):
+    devname = "SPI3"
+    start = 0xFEB30000
