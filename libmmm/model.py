@@ -174,28 +174,36 @@ class Reg32(Block):
             datapoint.int = value
         return list(self)
 
-    def _setbit(self, data32bit, start, size, value):
+    def _setbit(self, data32bit, start, size, value, buf=True):
         # reset the related bits to 0
         data32bit = data32bit & ~((self.maxbits << (start + size)) ^ (self.maxbits << start)) & self.maxbits
         # set the new bits
         newval = (data32bit | (value << start)) & self.maxbits
+        if not buf:
+            return newval
         return struct.pack("%sI" % self.endian, newval)
 
     def writedatapoint(self, oldval, start, size, value):
         super(Reg32, self).write(self._setbit(oldval, start, size, value))
 
-    def write(self, name, value):
+    def sync(self):
+        bufi = self.readraw()
+        for start, size, datapoint in self.iterdatapoints():
+            bufi = self._setbit(bufi, start, size, datapoint.int, buf=False)
+        super(Reg32, self).write(struct.pack("%sI" % self.endian, bufi))
+
+    def write(self, name, value, sync=True, zero=False):
         if not self.allowwrite:
             raise RuntimeError("Read only register, writing is not supported")
-        oldval = self.readraw()
         for start, size, datapoint in self.iterdatapoints():
             if datapoint.name == name:
                 if not datapoint.allowwrite:
                     raise RuntimeError("Read only datapoint, writing is not supported")
                 datapoint.value = value
-                if isinstance(datapoint, VirtualDatapoint):
+                if isinstance(datapoint, VirtualDatapoint) or not sync:
                     return True
-                self.writedatapoint(oldval, start, size, datapoint.int)
+                prev = 0 if zero else self.readraw()
+                self.writedatapoint(prev, start, size, datapoint.int)
                 return True
 
     def iterdatapoints(self):
