@@ -92,6 +92,23 @@ pclk_bigcore1_cru = "pclk_bigcore1_cru"
 pclk_bigcore1_cpuboost = "pclk_bigcore1_cpuboost"
 clk_24m_bigcore1_cpuboost = "clk_24m_bigcore1_cpuboost"
 
+clk_uart8 = "clk_uart8"
+clk_uart8_frac = "clk_uart8_frac"
+sclk_uart8 = "sclk_uart8"
+clk_uart9 = "clk_uart9"
+clk_uart9_frac = "clk_uart9_frac"
+sclk_uart9 = "sclk_uart9"
+pclk_spi0 = "pclk_spi0"
+pclk_spi1 = "pclk_spi1"
+pclk_spi2 = "pclk_spi2"
+pclk_spi3 = "pclk_spi3"
+pclk_spi4 = "pclk_spi4"
+clk_spi0 = "clk_spi0"
+clk_spi1 = "clk_spi1"
+clk_spi2 = "clk_spi2"
+clk_spi3 = "clk_spi3"
+clk_spi4 = "clk_spi4"
+
 
 def _divided_freqs(*clocks, minfreq=100, maxdiv=32):
     freqs = []
@@ -232,6 +249,14 @@ class CRU(Device):
         self.reg_gpll = self.fracpll_con(0x1c0, GPLL)
         self.reg_npll = self.intpll_con(0x1e0, NPLL)
         self.gpu()
+        self.clkgates()
+
+    def clkgates(self):
+        clks = [clk_uart8, clk_uart8_frac, sclk_uart8, clk_uart9, clk_uart9_frac, sclk_uart9,
+                pclk_spi0, pclk_spi1, pclk_spi2, pclk_spi3, pclk_spi4, clk_spi0, clk_spi1,
+                clk_spi2, clk_spi3, clk_spi4]
+        reg = self.clkgate(0x838, *clks)
+        self.block(reg)
 
     def regfromoffset(self, offset, base=0x300, prefix="CLKSEL_"):
         regnum = int((offset - base) / 4)
