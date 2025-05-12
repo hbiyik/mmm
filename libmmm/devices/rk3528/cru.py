@@ -24,6 +24,13 @@ aclk_gpu = "aclk_gpu"
 clk_gpu_pvtpll = "clk_gpu_pvtpll"
 aclk_gpu_mali = "aclk_gpu_mali"
 
+pclk_pwm0 = "pclk_pwm0"
+clk_pwm0 = "clk_pwm0"
+clk_capture_pwm0 = "clk_capture_pwm0"
+pclk_pwm1 = "pclk_pwm1"
+clk_pwm1 = "clk_pwm1"
+clk_capture_pwm1 = "clk_capture_pwm1"
+
 
 class CRU(Rk3588CRU):
     devname = "CRU"
@@ -50,3 +57,13 @@ class CRU(Rk3588CRU):
 
         self.addgroup("GPU", clksel_gpu.name)
         self.addgroup("GPU", clkgate_gpu.name)
+
+        pwm_clks = [None] * 16
+        pwm_clks[4] = pclk_pwm0
+        pwm_clks[5] = clk_pwm0
+        pwm_clks[6] = clk_capture_pwm0
+        pwm_clks[7] = pclk_pwm1
+        pwm_clks[8] = clk_pwm1
+        pwm_clks[9] = clk_capture_pwm1
+        clkgate_pwm = self.clkgate(0x800 + 11 * 4, *pwm_clks)
+        self.block(clkgate_pwm)
