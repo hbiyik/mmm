@@ -170,8 +170,6 @@ class SPI(Device):
         self.addgroup("CONTROL", "ENABLE")
         self.addgroup("CONTROL", "SLAVE_ENABLE")
         self.addgroup("CONTROL", "BAUDRATE")
-        self.addgroup("CONTROL", "TXFLR")
-        self.addgroup("CONTROL", "RXFLR")
         self.addgroup("CONTROL", "TIMEOUT")
         self.addgroup("CONTROL", "BYPASS")
 
@@ -181,6 +179,8 @@ class SPI(Device):
 
         self.addgroup("STATUS", "STATUS")
         self.addgroup("STATUS", "VERSION")
+        self.addgroup("STATUS", "TXFLR")
+        self.addgroup("STATUS", "RXFLR")
 
         self.addgroup("INTERRUPT", "TXFTLR")
         self.addgroup("INTERRUPT", "RXFTLR")

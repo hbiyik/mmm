@@ -36,8 +36,8 @@ class MotorolaSlave:
     motorola_master_ssd = 1
     endian = "big"
     ght = 1
-    clk_div = "198"
-    cs = 0
+    clk_div = 198
+    cs = 2
     timeout = 1
 
     def __init__(self, spidev=None, *clocks):
@@ -51,6 +51,9 @@ class MotorolaSlave:
         self.rxdr_reg = self.spidev.getblock("RXDR")
         self.sen_reg = self.spidev.getblock("SLAVE_ENABLE")
         self.sta_reg = self.spidev.getblock("STATUS")
+        self.intc_reg = self.spidev.getblock("INT_CLEAR")
+        self.intm_reg = self.spidev.getblock("INT_CLEAR")
+        self.rxflr_reg = self.spidev.getblock("RXFLR")
         self.config = ((self.ctrl_reg, "frame_len", self.frame_len),
                        (self.ctrl_reg, "motorola_master_ssd", self.motorola_master_ssd),
                        (self.ctrl_reg, "ght", self.ght),
@@ -76,52 +79,34 @@ class MotorolaSlave:
         self.en_reg.read()
         if self.en_reg.get("enable").int == 1:
             self.waitreg(self.en_reg, "enable", 0)
-        self.en_reg.write("enable", 1)
 
         for clock in self.clocks:
             clock.reg.write(clock.name, common.ON)
-        regs = []
         for reg, dpname, dpval in self.config:
-            if reg not in regs:
-                reg.read()
-                regs.append(reg)
-            reg.write(dpname, dpval, sync=False)
-        for reg in regs:
-            reg.sync()
+            reg.read()
+            reg.write(dpname, dpval)
+        self.en_reg.write("enable", 1)
         return self
 
     def read(self):
         buf = []
-        #if self.sta_reg.get("rx_empty").int == 1:
-        #    self.waitreg(self.sta_reg, "rx_empty", 0)
-        self.setmode("rx")
         self.sta_reg.read()
-        #self.sen_reg.write("slave_enable", 0)
-        #while not self.sta_reg.get("rx_empty").int:
-        self.rxdr_reg.read()
-        buf.append(self.rxdr_reg.get("rxdr").int)
-        self.rxdr_reg.read()
-        buf.append(self.rxdr_reg.get("rxdr").int)
-        self.rxdr_reg.read()
-        buf.append(self.rxdr_reg.get("rxdr").int)
-        self.rxdr_reg.read()
-        buf.append(self.rxdr_reg.get("rxdr").int)
-        #self.sta_reg.read()
+        self.rxflr_reg.read()
+        if self.sta_reg.get("rx_empty").int == 1:
+            self.waitreg(self.sta_reg, "rx_empty", 0)
+        while self.rxflr_reg.get("rx_num_entries").int:
+            if self.sta_reg.get("rx_empty").int == 1:
+                self.waitreg(self.sta_reg, "rx_empty", 0)
+            self.rxdr_reg.read()
+            buf.append(self.rxdr_reg.get("rxdr").int)
+            self.sta_reg.read()
+            self.rxflr_reg.read()
         return buf
 
     def write(self, buf):
-        #intc = self.spidev.getblock("INT_CLEAR")
-        #intm = self.spidev.getblock("INT_MASK")
-        #intm.write("tx_overflow", 1)
-        #intm.write("tx_finish", 1)
-        #intc.write("combined", 1)
-        #intc.write("tx_overflow", 1)
-        #intc.write("tx_finish", 1)
         self.sta_reg.read()
-        #if self.sta_reg.get("tx_busy").int == 1:
-        #    self.waitreg(self.sta_reg, "tx_busy", 0)
-        self.setmode("rxtx")
-        # self.sen_reg.write("slave_enable", self.cs)
+        if self.sta_reg.get("slave_tx_busy").int == 1:
+            self.waitreg(self.sta_reg, "slave_tx_busy", 0)
         self.txdr_reg.write("txdr", buf, zero=True)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -143,8 +128,8 @@ class Rk806:
         yield (1 | SPI_CMD_WRITE << 7 | addr << 8) & 0xff
         yield (addr | data << 8) & 0xff
 
-    def spi_cmds_read_reg(self, addr):
-        yield 1 | SPI_CMD_READ << 7
+    def spi_cmds_read_reg(self, addr, count=1):
+        yield (count - 1) | SPI_CMD_READ << 7
         yield addr
         yield 0
 
@@ -157,7 +142,7 @@ class Rk806:
 
 
 REMOTE_DBG = "192.168.2.10"
-# REMOTE_DBG = None
+REMOTE_DBG = None
 
 if REMOTE_DBG:
     import pydevd  # @UnresolvedImport
