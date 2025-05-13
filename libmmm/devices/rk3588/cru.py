@@ -175,6 +175,8 @@ class FracPLL(VirtualDatapoint):
         p = self.con1.get("p").value
         s = self.con1.get("s").value
         k = self.con2.get("k").value
+        if p == 0:
+            return 0
         return int(((m + k / 65536) * self.basef * self.factor) / (p * (2 ** s)))
 
     def set(self, value):
