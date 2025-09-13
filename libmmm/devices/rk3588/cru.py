@@ -220,7 +220,8 @@ class BatchClockGate(VirtualDatapoint):
 
     def get(self):
         for point in self.points:
-            _reg, dp = self.getreg(point)
+            reg, dp = self.getreg(point)
+            reg.read()
             if not dp:
                 return 0
             if dp.value == common.OFF:
@@ -231,6 +232,7 @@ class BatchClockGate(VirtualDatapoint):
         value = [common.OFF, common.ON][value]
         for point in self.points:
             reg, dp = self.getreg(point)
+            reg.read()
             if not dp:
                 continue
             if not dp.value == value:
