@@ -82,7 +82,7 @@ class GRF(Device):
         PVTPLL_STATUS0.register(0, 32, Datapoint("OSC_CNT", default=0x0, validity=Validator(0, 2 ** 32 - 1)))
         PVTPLL_STATUS0.allowwrite = False
         self.block(PVTPLL_STATUS1)
-        PVTPLL_STATUS1.register(0, 32, Datapoint("OSC_CNT_AVG", default=0x0, validity=Validator(0, 2 ** 32 - 1)))
+        PVTPLL_STATUS1.register(0, 14, Datapoint("OSC_CNT_AVG", default=0x0, validity=Validator(0, 2 ** 32 - 1)))
         PVTPLL_STATUS1.allowwrite = False
         PVTPLL_STATUS1.register(None, None, PvtPllClock(self, PVTPLL_STATUS1, PVTPLL_CON1))
 
