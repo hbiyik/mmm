@@ -37,7 +37,7 @@ class MotorolaSlave:
     endian = "big"
     ght = 1
     clk_div = 198
-    cs = 2
+    cs = 1
     timeout = 1
 
     def __init__(self, spidev=None, *clocks):
@@ -57,6 +57,8 @@ class MotorolaSlave:
         self.config = ((self.ctrl_reg, "frame_len", self.frame_len),
                        (self.ctrl_reg, "motorola_master_ssd", self.motorola_master_ssd),
                        (self.ctrl_reg, "ght", self.ght),
+                       (self.ctrl_reg, "endian", self.endian),
+                       (self.ctrl_reg, "mode", "rxtx"),
                        (self.bd_reg, "clk_div", self.clk_div),
                        (self.sen_reg, "slave_enable", self.cs),
                        )
@@ -76,15 +78,16 @@ class MotorolaSlave:
                 raise RuntimeError(f"{self.spidev.name} is busy")
 
     def __enter__(self):
+        for clock in self.clocks:
+            clock.reg.write(clock.name, common.ON)
+
         self.en_reg.read()
         if self.en_reg.get("enable").int == 1:
             self.waitreg(self.en_reg, "enable", 0)
 
-        for clock in self.clocks:
-            clock.reg.write(clock.name, common.ON)
         for reg, dpname, dpval in self.config:
-            reg.read()
             reg.write(dpname, dpval)
+
         self.en_reg.write("enable", 1)
         return self
 
@@ -129,7 +132,7 @@ class Rk806:
         yield (addr | data << 8) & 0xff
 
     def spi_cmds_read_reg(self, addr, count=1):
-        yield (count - 1) | SPI_CMD_READ << 7
+        yield (count - 1) | (SPI_CMD_READ << 7)
         yield addr
         yield 0
 

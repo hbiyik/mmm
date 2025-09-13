@@ -46,7 +46,8 @@ class SPI(Device):
         reg_ctrl0.register(20, 1, Datapoint("role", validity=Validator(0, 1, "MASTER", "SLAVE")))
         reg_ctrl0.register(21, 1, Datapoint("microwire_transfermode", validity=Validator(0, 1, "NONSEQ", "SEQ")))
         reg_ctrl0.register(22, 1, Datapoint("sm", validity=Validator(0, 1, common.OFF, common.ON)))
-        reg_ctrl0.register(23, 1, Datapoint("loopback", validity=Validator(0, 1.)))
+        reg_ctrl0.register(23, 2, Datapoint("soi", validity=Validator(0, 3)))
+        reg_ctrl0.register(25, 1, Datapoint("loopback", validity=Validator(0, 1.)))
         self.block(reg_ctrl0)
 
         reg_ctrl1 = Reg32("CTRL1", 4)
