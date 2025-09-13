@@ -1,2 +1,9 @@
 *.pyc
 *.pyo
+*.cmd
+*.ko
+*.symvers
+*.mod*
+*.o
+*.symvers
+*.order
